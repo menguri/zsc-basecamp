@@ -27,7 +27,7 @@ for layout in "${run_layouts[@]}"; do
     echo "=== ZSC-EVAL MEP Stage2 | layout=${layout} ==="
     for seed in $(seq ${SEED_BEGIN} ${SEED_END}); do
         echo "  seed=${seed}"
-        python "${ZSCEVAL_TRAIN_DIR}/train_adaptive.py" \
+        CUDA_VISIBLE_DEVICES=${GPU} python "${ZSCEVAL_TRAIN_DIR}/train_adaptive.py" \
             --env_name "${env}" --algorithm_name "${algo}" \
             --experiment_name "mep-S2-s${population_size}" \
             --layout_name "${layout}" --num_agents 2 \

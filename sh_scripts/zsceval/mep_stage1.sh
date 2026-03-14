@@ -17,7 +17,7 @@ if [ -n "$1" ]; then run_layouts=("$1"); else run_layouts=("${LAYOUTS[@]}"); fi
 
 for layout in "${run_layouts[@]}"; do
     echo "=== ZSC-EVAL MEP Stage1 | layout=${layout}, pop=${population_size} ==="
-    python "${ZSCEVAL_TRAIN_DIR}/train_mep.py" \
+    CUDA_VISIBLE_DEVICES=${GPU} python "${ZSCEVAL_TRAIN_DIR}/train_mep.py" \
         --env_name "${env}" --algorithm_name "${algo}" \
         --experiment_name "mep-S1-s${population_size}" \
         --layout_name "${layout}" --num_agents 2 \

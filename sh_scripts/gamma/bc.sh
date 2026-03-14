@@ -32,7 +32,7 @@ for layout in "${run_layouts[@]}"; do
     echo "=== GAMMA BC | layout=${layout}, human_layout=${human_layout} ==="
     for seed in $(seq ${SEED_BEGIN} ${SEED_END}); do
         echo "  seed=${seed}"
-        python "${GAMMA_TRAIN_DIR}/train_overcooked_bc.py" \
+        CUDA_VISIBLE_DEVICES=${GPU} python "${GAMMA_TRAIN_DIR}/train_overcooked_bc.py" \
             --env_name "${env}" \
             --algorithm_name "${algo}" \
             --experiment_name "${exp}" \

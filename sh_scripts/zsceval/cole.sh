@@ -23,7 +23,7 @@ for layout in "${run_layouts[@]}"; do
     echo "=== ZSC-EVAL COLE | layout=${layout}, pop=${population_size} ==="
     for seed in $(seq ${SEED_BEGIN} ${SEED_END}); do
         echo "  seed=${seed}"
-        python "${ZSCEVAL_TRAIN_DIR}/train_cole.py" \
+        CUDA_VISIBLE_DEVICES=${GPU} python "${ZSCEVAL_TRAIN_DIR}/train_cole.py" \
             --env_name Overcooked --algorithm_name cole \
             --experiment_name "cole-S2-s${population_size}" \
             --layout_name "${layout}" --num_agents 2 \

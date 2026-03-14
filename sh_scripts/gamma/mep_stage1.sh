@@ -24,7 +24,7 @@ fi
 for layout in "${run_layouts[@]}"; do
     echo "=== GAMMA MEP Stage1 | layout=${layout}, pop_size=${population_size} ==="
     seed=1
-    python "${GAMMA_TRAIN_DIR}/train_overcooked_mep.py" \
+    CUDA_VISIBLE_DEVICES=${GPU} python "${GAMMA_TRAIN_DIR}/train_overcooked_mep.py" \
         --env_name "${env}" \
         --algorithm_name "${algo}" \
         --experiment_name "${exp}" \

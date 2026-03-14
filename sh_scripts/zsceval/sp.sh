@@ -23,7 +23,7 @@ for layout in "${run_layouts[@]}"; do
     echo "=== ZSC-EVAL SP | layout=${layout} ==="
     for seed in $(seq ${SEED_BEGIN} ${SEED_END}); do
         echo "  seed=${seed}"
-        python "${ZSCEVAL_TRAIN_DIR}/train_sp.py" \
+        CUDA_VISIBLE_DEVICES=${GPU} python "${ZSCEVAL_TRAIN_DIR}/train_sp.py" \
             --env_name "${env}" \
             --algorithm_name "${algo}" \
             --experiment_name "${exp}" \

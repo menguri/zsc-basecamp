@@ -23,7 +23,7 @@ for layout in "${run_layouts[@]}"; do
     echo "=== ZSC-EVAL HSP Stage2 | layout=${layout} ==="
     for seed in $(seq ${SEED_BEGIN} ${SEED_END}); do
         echo "  seed=${seed}"
-        python "${ZSCEVAL_TRAIN_DIR}/train_adaptive.py" \
+        CUDA_VISIBLE_DEVICES=${GPU} python "${ZSCEVAL_TRAIN_DIR}/train_adaptive.py" \
             --env_name Overcooked --algorithm_name adaptive \
             --experiment_name "hsp-S2-s${population_size}" \
             --layout_name "${layout}" --num_agents 2 \

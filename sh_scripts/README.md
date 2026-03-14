@@ -28,6 +28,83 @@ sh_scripts/
 
 ---
 
+## 가상환경 분리 세팅 (권장)
+
+### 0) 자동 세팅 (한 번에 실행)
+
+```bash
+cd zsc-basecamp
+bash sh_scripts/setup_venvs.sh
+```
+
+위 명령으로 아래 2개 가상환경이 생성/설치됩니다.
+
+- `.venv-gamma` (GAMMA 전용)
+- `.venv-zsceval` (ZSC-EVAL 전용)
+
+### 1) 수동 세팅 명령어 (복붙용)
+
+```bash
+cd zsc-basecamp
+
+# GAMMA 전용 venv
+uv venv --python python3 --no-managed-python --seed .venv-gamma
+source .venv-gamma/bin/activate
+uv pip install --python .venv-gamma/bin/python --upgrade pip setuptools wheel
+uv pip install --python .venv-gamma/bin/python -r GAMMA/requirements.txt
+uv pip install --python .venv-gamma/bin/python -e GAMMA
+deactivate
+
+# ZSC-EVAL 전용 venv
+uv venv --python python3 --no-managed-python --seed .venv-zsceval
+source .venv-zsceval/bin/activate
+uv pip install --python .venv-zsceval/bin/python --upgrade pip setuptools wheel
+(cd ZSC-EVAL && uv pip install --python ../.venv-zsceval/bin/python -r requirements.txt)
+deactivate
+```
+
+### 2) 실행할 때 환경 선택
+
+```bash
+cd zsc-basecamp
+
+# GAMMA 실행
+source .venv-gamma/bin/activate
+bash sh_scripts/gamma/sp.sh
+deactivate
+
+# ZSC-EVAL 실행
+source .venv-zsceval/bin/activate
+bash sh_scripts/zsceval/sp.sh
+deactivate
+```
+
+---
+
+## GPU 지정
+
+`common_args.sh`에서 `GPU=0` (기본값)으로 설정됩니다.
+실행 시 환경변수로 override:
+
+```bash
+# GPU 0 사용 (기본)
+bash sh_scripts/gamma/sp.sh
+
+# GPU 1 사용
+GPU=1 bash sh_scripts/gamma/sp.sh
+
+# GPU 2에서 특정 레이아웃만
+GPU=2 bash sh_scripts/zsceval/sp.sh cramped_room
+```
+
+`common_args.sh`의 기본값을 영구 변경하려면:
+```bash
+# common_args.sh 내 GPU 라인 수정
+GPU=${GPU:-1}   # 기본값을 1로 변경
+```
+
+---
+
 ## 사전 준비
 
 ### 1. ZSC-EVAL `old_dynamics` 수정 ⚠️ 필수

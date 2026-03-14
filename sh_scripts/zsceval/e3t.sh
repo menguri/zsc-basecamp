@@ -13,7 +13,7 @@ for layout in "${run_layouts[@]}"; do
     echo "=== ZSC-EVAL E3T | layout=${layout} ==="
     for seed in $(seq ${SEED_BEGIN} ${SEED_END}); do
         echo "  seed=${seed}"
-        python "${ZSCEVAL_TRAIN_DIR}/train_e3t.py" \
+        CUDA_VISIBLE_DEVICES=${GPU} python "${ZSCEVAL_TRAIN_DIR}/train_e3t.py" \
             --env_name Overcooked --algorithm_name e3t \
             --experiment_name e3t \
             --layout_name "${layout}" --num_agents 2 \

@@ -23,7 +23,7 @@ for layout in "${run_layouts[@]}"; do
     echo "=== GAMMA SP | layout=${layout} ==="
     for seed in $(seq ${SEED_BEGIN} ${SEED_END}); do
         echo "  seed=${seed}"
-        python "${GAMMA_TRAIN_DIR}/train_overcooked_sp.py" \
+        CUDA_VISIBLE_DEVICES=${GPU} python "${GAMMA_TRAIN_DIR}/train_overcooked_sp.py" \
             --env_name ${env} \
             --algorithm_name ${algo} \
             --experiment_name "${exp}" \

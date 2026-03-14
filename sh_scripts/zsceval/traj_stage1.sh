@@ -15,7 +15,7 @@ if [ -n "$1" ]; then run_layouts=("$1"); else run_layouts=("${LAYOUTS[@]}"); fi
 
 for layout in "${run_layouts[@]}"; do
     echo "=== ZSC-EVAL TrajeDi Stage1 | layout=${layout} ==="
-    python "${ZSCEVAL_TRAIN_DIR}/train_traj.py" \
+    CUDA_VISIBLE_DEVICES=${GPU} python "${ZSCEVAL_TRAIN_DIR}/train_traj.py" \
         --env_name Overcooked --algorithm_name traj \
         --experiment_name "traj-S1-s${population_size}" \
         --layout_name "${layout}" --num_agents 2 \
