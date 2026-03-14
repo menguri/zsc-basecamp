@@ -121,6 +121,7 @@ ensure_zsceval_policy_config() {
         --n_eval_rollout_threads 10
         --use_proper_time_limits
         --cnn_layers_params "32,3,1,1 64,3,1,1 32,3,1,1"
+        --use_wandb
     )
 
     CUDA_VISIBLE_DEVICES=${GPU} python "${ZSCEVAL_TRAIN_DIR}/train_sp.py" \
