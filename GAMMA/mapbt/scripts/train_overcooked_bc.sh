@@ -13,6 +13,7 @@ num_agents=2
 algo="bc"
 exp="bc"
 seed_max=1
+bc_num_epochs=400
 
 path=./overcooekd_population
 export POLICY_POOL=${path}
@@ -27,7 +28,7 @@ do
      --save_interval 25 --log_inerval 10 --use_recurrent_policy \
      --old_dynamics \
      --human_data_refresh \
-     --bc_num_epochs 100 --bc_batch_size 128 --lr 1e-2 \
+     --bc_num_epochs ${bc_num_epochs} --bc_batch_size 128 --lr 1e-2 \
      --use_eval --eval_stochastic --eval_interval 25 --eval_episodes 5 \
      --human_layout_name ${human_layout} \
      --wandb_name "WANDB_NAME" --user_name "USER_NAME" --use_wandb

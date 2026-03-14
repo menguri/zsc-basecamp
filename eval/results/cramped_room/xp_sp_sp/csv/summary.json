@@ -1,0 +1,10 @@
+{
+  "layout": "cramped_room",
+  "algo0": "sp",
+  "algo1": "sp",
+  "num_rows": 25,
+  "reward_mean": 188.8000030517578,
+  "reward_var": 8986.5595703125,
+  "reward_std": 94.7974624633789,
+  "csv_path": "/home/mlic/mingukang/zsc-basecamp/eval/results/cramped_room/xp_sp_sp/csv/xp_pairs.csv"
+}

@@ -278,7 +278,8 @@ class OvercookedRunner(Runner):
         sparse_r = 0.
         sparse_r_agent0 = 0.
         sparse_r_agent1 = 0.
-        for epoch in range(num_epochs):
+        # Use 1-based epoch index so save/eval at epoch==num_epochs is reachable.
+        for epoch in range(1, num_epochs + 1):
             train_info = self.trainer.fit_once()
             validation_info = self.trainer.validate()
             
@@ -287,7 +288,7 @@ class OvercookedRunner(Runner):
                 best_validation_acc = validation_acc
                 torch.save(policy_model.state_dict(), str(self.save_dir) + "/policy_best_valid_acc.pt")  
             
-            if epoch % self.eval_interval == 0:
+            if epoch % self.eval_interval == 0 or epoch == num_epochs:
                 print("epoch #", epoch)
                 print(train_info, validation_info)
 

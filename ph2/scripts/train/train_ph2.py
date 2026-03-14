@@ -39,7 +39,7 @@ import numpy as np
 
 from zsceval.config import get_config
 from zsceval.overcooked_config import get_overcooked_args, OLD_LAYOUTS
-from zsceval.utils.train_util import get_base_run_dir, setup_seed
+from zsceval.utils.train_util import setup_seed
 
 from ph2.ph2_config import get_ph2_args
 from ph2.envs.overcooked.overcooked_adapter import make_train_env, make_eval_env
@@ -56,6 +56,15 @@ def parse_args(args):
     parser = get_config()
     parser = get_overcooked_args(parser)
     parser = get_ph2_args(parser)
+    parser.allow_abbrev = False
+
+    # zsceval.config defines algorithm_name choices that don't include "ph2".
+    # Extend the existing choice list before argparse validation runs.
+    for action in parser._actions:
+        if getattr(action, "dest", None) == "algorithm_name" and action.choices is not None:
+            if "ph2" not in action.choices:
+                action.choices = list(action.choices) + ["ph2"]
+            break
 
     # ph2 doesn't go through make_trainer_policy_cls — skip algorithm_name restriction
     all_args = parser.parse_args(args)
@@ -71,14 +80,71 @@ def parse_args(args):
 
     # overcooked_version must be "new" (ph2 uses overcooked_new)
     all_args.overcooked_version = "new"
+    if all_args.env_name == "Overcooked" and all_args.num_agents != 2:
+        logger.warning(
+            f"Overcooked expects 2 agents, but num_agents={all_args.num_agents}. "
+            "Forcing num_agents=2 for PH2 compatibility."
+        )
+        all_args.num_agents = 2
+    if all_args.env_name == "Overcooked" and all_args.cnn_layers_params is None:
+        # Prevent default 5x5/no-padding CNN from crashing on small layouts (e.g., 5x4).
+        all_args.cnn_layers_params = "32,3,1,1 64,3,1,1 32,3,1,1"
 
-    # entropy_coef scalar convenience: if user passes single --entropy_coef
-    # convert to ZSC-EVAL's list format
-    if hasattr(all_args, "entropy_coef") and not hasattr(all_args, "_entropy_coef_set"):
-        all_args.entropy_coefs = [all_args.entropy_coef, all_args.entropy_coef]
+    # PH2 always runs with recurrent policy.
+    # In this codebase, "--use_recurrent_policy" is defined as store_false,
+    # so we force the intended values here to avoid accidental misconfiguration.
+    all_args.use_recurrent_policy = True
+    all_args.use_naive_recurrent_policy = False
+
+    # parser compatibility: support legacy scalar `--entropy_coef`
+    # by converting to ZSC-EVAL schedule format.
+    entropy_coef_scalar = getattr(all_args, "entropy_coef", None)
+    if entropy_coef_scalar is not None:
+        all_args.entropy_coefs = [entropy_coef_scalar, entropy_coef_scalar]
         all_args.entropy_coef_horizons = [0, int(all_args.num_env_steps)]
 
+    # Compatibility defaults with ZSC-EVAL runner/env scripts.
+    compat_defaults = {
+        "use_phi": False,
+        "use_task_v_out": False,
+        "stage": 1,
+        "store_traj": False,
+        "agent0_policy_name": "",
+        "agent1_policy_name": "",
+    }
+    for k, v in compat_defaults.items():
+        if not hasattr(all_args, k):
+            setattr(all_args, k, v)
+
     return all_args
+
+
+def get_ph2_base_run_dir() -> str:
+    """
+    PH2 stores results under zsc-basecamp/results/ph2 by default.
+    Override with PH2_BASE_RUN_DIR if needed.
+    """
+    override = os.environ.get("PH2_BASE_RUN_DIR", "").strip()
+    if override:
+        return override
+    repo_root = os.path.abspath(os.path.join(_PH2_ROOT, ".."))
+    return os.path.join(repo_root, "results", "ph2")
+
+
+def allocate_next_run_dir(run_root: Path) -> Path:
+    """
+    Allocate next run directory as run1, run2, ...
+    Safe under concurrent launches by relying on atomic mkdir.
+    """
+    os.makedirs(str(run_root), exist_ok=True)
+    idx = 1
+    while True:
+        candidate = run_root / f"run{idx}"
+        try:
+            os.makedirs(str(candidate), exist_ok=False)
+            return candidate
+        except FileExistsError:
+            idx += 1
 
 
 def main(args):
@@ -98,26 +164,14 @@ def main(args):
         torch.set_num_threads(all_args.n_training_threads)
 
     # ---- run dir ----
-    base_run_dir = Path(get_base_run_dir())
-    run_dir = (
+    base_run_dir = Path(get_ph2_base_run_dir())
+    run_root = (
         base_run_dir
         / all_args.env_name
         / all_args.layout_name
-        / "ph2"
         / all_args.experiment_name
     )
-    os.makedirs(str(run_dir), exist_ok=True)
-
-    # wandb sets run_dir internally; for non-wandb add runX suffix
-    if not all_args.use_wandb:
-        exst = [
-            int(str(f.name).split("run")[1])
-            for f in run_dir.iterdir()
-            if str(f.name).startswith("run")
-        ] if run_dir.exists() else []
-        curr_run = f"run{max(exst) + 1}" if exst else "run1"
-        run_dir = run_dir / curr_run
-        os.makedirs(str(run_dir), exist_ok=True)
+    run_dir = allocate_next_run_dir(run_root)
 
     all_args.run_dir = run_dir
 

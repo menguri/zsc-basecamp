@@ -3,7 +3,7 @@ PH2Actor — R_Actor with optional context injection after the RNN.
 
 Two extra inputs may be provided (both are optional):
   pred_context    : (B, pred_dim)   — L2-normalised logits from PartnerPredictionNet
-  blocked_features: (B, hidden_size) — mean-pooled CNN features of K blocked obs
+  blocked_features: (B, hidden_size * K_max) — slot-wise concatenated blocked latents
                     (spec policy only; ind leaves this as None)
 
 After the RNN produces actor_features (B, hidden_size), the extras are concatenated

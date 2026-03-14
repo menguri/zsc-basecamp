@@ -9,6 +9,13 @@ import argparse
 
 def get_ph2_args(parser: argparse.ArgumentParser) -> argparse.ArgumentParser:
     """Add PH2-specific arguments to an existing parser."""
+    existing_opts = set(getattr(parser, "_option_string_actions", {}).keys())
+
+    def _add_if_missing(*option_strings, **kwargs):
+        if any(opt in existing_opts for opt in option_strings):
+            return
+        parser.add_argument(*option_strings, **kwargs)
+        existing_opts.update(option_strings)
 
     # ---- dual-policy schedule ----
     parser.add_argument(
@@ -79,13 +86,13 @@ def get_ph2_args(parser: argparse.ArgumentParser) -> argparse.ArgumentParser:
     parser.add_argument(
         "--ph2_blocked_penalty_omega",
         type=float,
-        default=1.0,
+        default=10.0,
         help="Scale (omega) for blocked-state L2-distance penalty on spec reward.",
     )
     parser.add_argument(
         "--ph2_blocked_penalty_sigma",
         type=float,
-        default=1.0,
+        default=2.0,
         help="Decay rate (sigma) for blocked-state L2-distance penalty on spec reward.",
     )
     # V_gap-based sampling temperature
@@ -98,13 +105,95 @@ def get_ph2_args(parser: argparse.ArgumentParser) -> argparse.ArgumentParser:
             "Higher beta = more focused on states with large V_gap."
         ),
     )
+    parser.add_argument(
+        "--ph2_vgap_beta_schedule_enabled",
+        action="store_true",
+        default=True,
+        help="Enable linear schedule for V_gap beta (start -> end).",
+    )
+    parser.add_argument(
+        "--ph2_no_vgap_beta_schedule",
+        action="store_false",
+        dest="ph2_vgap_beta_schedule_enabled",
+        help="Disable V_gap beta schedule and use fixed ph2_vgap_beta.",
+    )
+    parser.add_argument(
+        "--ph2_vgap_beta_start",
+        type=float,
+        default=0.0,
+        help="Start value of V_gap beta schedule.",
+    )
+    parser.add_argument(
+        "--ph2_vgap_beta_end",
+        type=float,
+        default=1.0,
+        help="End value of V_gap beta schedule.",
+    )
+    parser.add_argument(
+        "--ph2_vgap_beta_horizon_env_steps",
+        type=int,
+        default=-1,
+        help=(
+            "Horizon (env steps) for V_gap beta schedule. "
+            "If <=0, uses total PH2 training env steps."
+        ),
+    )
+    parser.add_argument(
+        "--ph2_epsilon",
+        type=float,
+        default=0.2,
+        help=(
+            "Random action probability for PH2 epsilon behavior "
+            "(spec-spec, spec-ind spec slot, ind-ind)."
+        ),
+    )
+    _add_if_missing(
+        "--use_phi",
+        default=False,
+        action="store_true",
+        help=(
+            "Compatibility flag with ZSC-EVAL overcooked train scripts. "
+            "Keeps a fixed policy-agent index when paired with external partner agents."
+        ),
+    )
+    _add_if_missing(
+        "--use_task_v_out",
+        default=False,
+        action="store_true",
+        help="Compatibility flag for task-conditioned value heads.",
+    )
+    # ---- parser compatibility aliases ----
+    # ZSC-EVAL uses `--entropy_coefs/--entropy_coef_horizons`.
+    # Some legacy scripts still pass a scalar `--entropy_coef`.
+    _add_if_missing(
+        "--entropy_coef",
+        type=float,
+        default=None,
+        help=(
+            "Legacy alias. If set, overrides entropy schedule as "
+            "--entropy_coefs <v> <v> and --entropy_coef_horizons 0 <num_env_steps>."
+        ),
+    )
 
     # ---- wandb project / entity override ----
-    parser.add_argument("--wandb_project", type=str, default="zsc-basecamp",
-                        help="W&B project name.")
-    parser.add_argument("--wandb_entity",  type=str, default="m-personal-experiment",
-                        help="W&B entity (team/user) name.")
-    parser.add_argument("--wandb_tags",    type=str, nargs="*", default=[],
-                        help="W&B run tags.")
+    _add_if_missing(
+        "--wandb_project",
+        type=str,
+        default="zsc-basecamp",
+        help="W&B project name.",
+    )
+    _add_if_missing(
+        "--wandb_entity",
+        type=str,
+        default="m-personal-experiment",
+        help="W&B entity (team/user) name.",
+    )
+    _add_if_missing(
+        "--wandb_tags",
+        type=str,
+        nargs="*",
+        default=[],
+        help="W&B run tags.",
+    )
 
     return parser

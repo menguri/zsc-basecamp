@@ -19,7 +19,7 @@ Partner prediction (E3T):
   ph2_share_pred=False (default): spec_pred and ind_pred are separate networks.
     - spec_pred trained from spec rollout partner actions
     - ind_pred  trained from ind  rollout partner actions
-  ph2_share_pred=True: single shared network, trained from ind rollout only.
+  ph2_share_pred=True: single shared network, trained from both spec and ind rollouts.
 """
 from collections import defaultdict
 
@@ -59,12 +59,14 @@ class PH2Trainer:
         pred_dim    = act_space.n
         use_blocked = getattr(args, "ph2_spec_use_blocked", False)
         hidden_size = getattr(args, "hidden_size", 64)
+        num_blocked = max(1, int(getattr(args, "ph2_num_blocked_slots", 1)))
+        blocked_feat_dim = hidden_size * num_blocked
 
         self.spec_policy = PH2Policy(
             args, obs_space, share_obs_space, act_space, device,
             pred_dim=pred_dim,
             use_blocked=use_blocked,
-            blocked_feat_dim=hidden_size,
+            blocked_feat_dim=blocked_feat_dim,
         )
         self.ind_policy = PH2Policy(
             args, obs_space, share_obs_space, act_space, device,
@@ -196,14 +198,32 @@ class PH2Trainer:
                 for k, v in info.items():
                     train_info[k] += v
 
-                # train spec_pred only when not sharing
-                if self.use_partner_pred and not self.share_pred and self.spec_pred is not None:
-                    pred_info = self._pred_update(
-                        self.spec_pred, self.spec_pred_optimizer,
-                        obs_hist_b, act_hist_b, partner_acts_b, train_masks_batch,
-                    )
-                    for k, v in pred_info.items():
-                        train_info[f"spec_pred_{k}"] += v
+                # predictor update on spec rollout:
+                # - shared mode   : update shared predictor (ind_pred) as well
+                # - separate mode : update spec predictor only
+                if self.use_partner_pred:
+                    if self.share_pred and self.ind_pred is not None:
+                        pred_info = self._pred_update(
+                            self.ind_pred,
+                            self.ind_pred_optimizer,
+                            obs_hist_b,
+                            act_hist_b,
+                            partner_acts_b,
+                            train_masks_batch,
+                        )
+                        for k, v in pred_info.items():
+                            train_info[f"shared_pred_{k}"] += v
+                    elif self.spec_pred is not None:
+                        pred_info = self._pred_update(
+                            self.spec_pred,
+                            self.spec_pred_optimizer,
+                            obs_hist_b,
+                            act_hist_b,
+                            partner_acts_b,
+                            train_masks_batch,
+                        )
+                        for k, v in pred_info.items():
+                            train_info[f"spec_pred_{k}"] += v
 
         num_updates = self.spec_trainer.ppo_epoch * self.spec_trainer.num_mini_batch
         return {f"spec/{k}": v / num_updates for k, v in train_info.items()}
@@ -254,7 +274,10 @@ class PH2Trainer:
                         obs_hist_b, act_hist_b, partner_acts_b, train_masks_b,
                     )
                     for k, v in pred_info.items():
-                        train_info[k] += v
+                        if self.share_pred:
+                            train_info[f"shared_pred_{k}"] += v
+                        else:
+                            train_info[k] += v
 
         num_updates = self.ind_trainer.ppo_epoch * self.ind_trainer.num_mini_batch
         return {f"ind/{k}": v / num_updates for k, v in train_info.items()}
@@ -391,13 +414,28 @@ class PH2Trainer:
         import os
         os.makedirs(save_dir, exist_ok=True)
         suffix = f"_periodic_{step}" if step > 0 else ""
-        torch.save(self.spec_policy.actor.state_dict(),  f"{save_dir}/spec_actor{suffix}.pt")
-        torch.save(self.spec_policy.critic.state_dict(), f"{save_dir}/spec_critic{suffix}.pt")
-        torch.save(self.ind_policy.actor.state_dict(),   f"{save_dir}/ind_actor{suffix}.pt")
-        torch.save(self.ind_policy.critic.state_dict(),  f"{save_dir}/ind_critic{suffix}.pt")
+        spec_actor_sd = self.spec_policy.actor.state_dict()
+        spec_critic_sd = self.spec_policy.critic.state_dict()
+        ind_actor_sd_full = self.ind_policy.actor.state_dict()
+        ind_critic_sd = self.ind_policy.critic.state_dict()
+
+        # Compatibility export:
+        # drop PH2-specific projection head so actor checkpoint can be loaded by
+        # vanilla MAPPO/RMAPPO actor definitions used in GAMMA/ZSC-EVAL eval flow.
+        ind_actor_sd_compat = {
+            k: v for k, v in ind_actor_sd_full.items() if not k.startswith("_ph2_proj.")
+        }
+
+        torch.save(spec_actor_sd,  f"{save_dir}/spec_actor{suffix}.pt")
+        torch.save(spec_critic_sd, f"{save_dir}/spec_critic{suffix}.pt")
+        torch.save(ind_actor_sd_full, f"{save_dir}/ind_actor{suffix}.pt")
+        torch.save(ind_critic_sd, f"{save_dir}/ind_critic{suffix}.pt")
+
         # eval compat: ind is the default evaluation policy
-        torch.save(self.ind_policy.actor.state_dict(),   f"{save_dir}/actor{suffix}.pt")
-        torch.save(self.ind_policy.critic.state_dict(),  f"{save_dir}/critic{suffix}.pt")
+        torch.save(ind_actor_sd_compat, f"{save_dir}/actor{suffix}.pt")
+        torch.save(ind_critic_sd, f"{save_dir}/critic{suffix}.pt")
+        # Some runners expect model(.pt) in single-network mode.
+        torch.save(ind_actor_sd_compat, f"{save_dir}/model{suffix}.pt")
         if self.ind_pred is not None:
             torch.save(self.ind_pred.state_dict(), f"{save_dir}/ind_pred{suffix}.pt")
         if not self.share_pred and self.spec_pred is not None:

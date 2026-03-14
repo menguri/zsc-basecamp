@@ -21,6 +21,18 @@ get_human_layout() {
 
 export POLICY_POOL="${GAMMA_POLICY_POOL}"
 
+# BC training amount (can be overridden at runtime)
+# Example: BC_NUM_EPOCHS=200 BC_BATCH_SIZE=128 bash sh_scripts/gamma/bc.sh
+BC_NUM_EPOCHS="${BC_NUM_EPOCHS:-400}"
+BC_BATCH_SIZE="${BC_BATCH_SIZE:-128}"
+BC_LR="${BC_LR:-1e-2}"
+BC_SAVE_INTERVAL="${BC_SAVE_INTERVAL:-25}"
+BC_EVAL_INTERVAL="${BC_EVAL_INTERVAL:-25}"
+BC_EVAL_EPISODES="${BC_EVAL_EPISODES:-5}"
+BC_LOG_INTERVAL="${BC_LOG_INTERVAL:-10}"
+BC_SEED_BEGIN="${BC_SEED_BEGIN:-1}"
+BC_SEED_END="${BC_SEED_END:-10}"
+
 if [ -n "$1" ]; then
     run_layouts=("$1")
 else
@@ -30,7 +42,7 @@ fi
 for layout in "${run_layouts[@]}"; do
     human_layout=$(get_human_layout "${layout}")
     echo "=== GAMMA BC | layout=${layout}, human_layout=${human_layout} ==="
-    for seed in $(seq ${SEED_BEGIN} ${SEED_END}); do
+    for seed in $(seq "${BC_SEED_BEGIN}" "${BC_SEED_END}"); do
         echo "  seed=${seed}"
         CUDA_VISIBLE_DEVICES=${GPU} python "${GAMMA_TRAIN_DIR}/train_overcooked_bc.py" \
             --env_name "${env}" \
@@ -49,13 +61,13 @@ for layout in "${run_layouts[@]}"; do
             --use_recurrent_policy \
             --old_dynamics \
             --human_data_refresh \
-            --bc_num_epochs 100 \
-            --bc_batch_size 128 \
-            --lr 1e-2 \
+            --bc_num_epochs "${BC_NUM_EPOCHS}" \
+            --bc_batch_size "${BC_BATCH_SIZE}" \
+            --lr "${BC_LR}" \
             --human_layout_name "${human_layout}" \
-            --save_interval 25 \
-            --log_interval 10 \
-            --use_eval --eval_stochastic --eval_interval 25 --eval_episodes 5 \
+            --save_interval "${BC_SAVE_INTERVAL}" \
+            --log_interval "${BC_LOG_INTERVAL}" \
+            --use_eval --eval_stochastic --eval_interval "${BC_EVAL_INTERVAL}" --eval_episodes "${BC_EVAL_EPISODES}" \
             --use_wandb \
             --wandb_name "${WANDB_ENTITY}"
     done

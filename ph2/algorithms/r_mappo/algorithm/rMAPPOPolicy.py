@@ -194,9 +194,15 @@ class PH2Policy(R_MAPPOPolicy):
 
         # Replace vanilla R_Actor with PH2Actor
         from ph2.algorithms.ph2.ph2_actor import PH2Actor
+        from ph2.algorithms.ph2.ph2_critic import PH2Critic
         self.actor = PH2Actor(
             args, obs_space, act_space, device,
             pred_dim=pred_dim,
+            use_blocked=use_blocked,
+            blocked_feat_dim=blocked_feat_dim,
+        )
+        self.critic = PH2Critic(
+            args, share_obs_space, device,
             use_blocked=use_blocked,
             blocked_feat_dim=blocked_feat_dim,
         )
@@ -204,6 +210,12 @@ class PH2Policy(R_MAPPOPolicy):
         self.actor_optimizer = torch.optim.Adam(
             self.actor.parameters(),
             lr=self.lr,
+            eps=self.opti_eps,
+            weight_decay=self.weight_decay,
+        )
+        self.critic_optimizer = torch.optim.Adam(
+            self.critic.parameters(),
+            lr=self.critic_lr,
             eps=self.opti_eps,
             weight_decay=self.weight_decay,
         )
@@ -227,8 +239,31 @@ class PH2Policy(R_MAPPOPolicy):
             pred_context=pred_context,
             blocked_features=blocked_features,
         )
-        values, rnn_states_critic = self.critic(share_obs, rnn_states_critic, masks, task_id=task_id)
+        values, rnn_states_critic = self.critic(
+            share_obs,
+            rnn_states_critic,
+            masks,
+            task_id=task_id,
+            blocked_features=blocked_features,
+        )
         return values, actions, action_log_probs, rnn_states_actor, rnn_states_critic
+
+    def get_values(
+        self,
+        share_obs,
+        rnn_states_critic,
+        masks,
+        task_id=None,
+        blocked_features=None,
+    ):
+        values, _ = self.critic(
+            share_obs,
+            rnn_states_critic,
+            masks,
+            task_id=task_id,
+            blocked_features=blocked_features,
+        )
+        return values
 
     def evaluate_actions(
         self,
@@ -249,5 +284,11 @@ class PH2Policy(R_MAPPOPolicy):
             pred_context=pred_context,
             blocked_features=blocked_features,
         )
-        values, _ = self.critic(share_obs, rnn_states_critic, masks, task_id=task_id)
+        values, _ = self.critic(
+            share_obs,
+            rnn_states_critic,
+            masks,
+            task_id=task_id,
+            blocked_features=blocked_features,
+        )
         return values, action_log_probs, dist_entropy, policy_values

@@ -50,6 +50,12 @@ def make_trainer_policy_cls(algorithm_name, use_single_network=False):
             "zsceval.algorithms.population.traj.Traj_Trainer",
             "zsceval.algorithms.population.policy_pool.PolicyPool",
         ),
+        # BC checkpoints are actor-only and can be loaded by the standard
+        # R_MAPPOPolicy actor path during evaluation.
+        "bc": (
+            "zsceval.algorithms.r_mappo.r_mappo.R_MAPPO",
+            "zsceval.algorithms.r_mappo.algorithm.rMAPPOPolicy.R_MAPPOPolicy",
+        ),
     }
 
     if algorithm_name not in algorithm_dict:

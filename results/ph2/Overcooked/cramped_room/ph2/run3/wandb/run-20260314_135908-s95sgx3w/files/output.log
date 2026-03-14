@@ -1,0 +1,18 @@
+[32m2026-03-14 13:59:09.376[0m | [1mINFO    [0m | [36mph2.runner.shared.base_runner[0m:[36m__init__[0m:[36m123[0m - [1mPolicy config saved to /home/mlic/mingukang/zsc-basecamp/results/ph2/Overcooked/cramped_room/ph2/run3/policy_config.pkl[0m
+[32m2026-03-14 14:01:07.976[0m | [1mINFO    [0m | [36mph2.runner.shared.overcooked_runner[0m:[36mrun[0m:[36m455[0m - [1m[PH2] cramped_room | ep 0/375 | steps 80000/30000000 | FPS 674[0m
+[32m2026-03-14 14:01:11.767[0m | [1mINFO    [0m | [36mph2.runner.shared.overcooked_runner[0m:[36meval[0m:[36m997[0m - [1meval sparse_r: 0.000[0m
+[32m2026-03-14 14:03:03.532[0m | [1mINFO    [0m | [36mph2.runner.shared.overcooked_runner[0m:[36mrun[0m:[36m455[0m - [1m[PH2] cramped_room | ep 1/375 | steps 160000/30000000 | FPS 683[0m
+[32m2026-03-14 14:04:57.858[0m | [1mINFO    [0m | [36mph2.runner.shared.overcooked_runner[0m:[36mrun[0m:[36m455[0m - [1m[PH2] cramped_room | ep 2/375 | steps 240000/30000000 | FPS 688[0m
+[32m2026-03-14 14:06:51.375[0m | [1mINFO    [0m | [36mph2.runner.shared.overcooked_runner[0m:[36mrun[0m:[36m455[0m - [1m[PH2] cramped_room | ep 3/375 | steps 320000/30000000 | FPS 692[0m
+[32m2026-03-14 14:08:38.806[0m | [1mINFO    [0m | [36mph2.runner.shared.overcooked_runner[0m:[36mrun[0m:[36m455[0m - [1m[PH2] cramped_room | ep 4/375 | steps 400000/30000000 | FPS 702[0m
+[32m2026-03-14 14:10:32.423[0m | [1mINFO    [0m | [36mph2.runner.shared.overcooked_runner[0m:[36mrun[0m:[36m455[0m - [1m[PH2] cramped_room | ep 5/375 | steps 480000/30000000 | FPS 702[0m
+[32m2026-03-14 14:12:23.017[0m | [1mINFO    [0m | [36mph2.runner.shared.overcooked_runner[0m:[36mrun[0m:[36m455[0m - [1m[PH2] cramped_room | ep 6/375 | steps 560000/30000000 | FPS 705[0m
+[32m2026-03-14 14:14:17.655[0m | [1mINFO    [0m | [36mph2.runner.shared.overcooked_runner[0m:[36mrun[0m:[36m455[0m - [1m[PH2] cramped_room | ep 7/375 | steps 640000/30000000 | FPS 704[0m
+[32m2026-03-14 14:16:12.009[0m | [1mINFO    [0m | [36mph2.runner.shared.overcooked_runner[0m:[36mrun[0m:[36m455[0m - [1m[PH2] cramped_room | ep 8/375 | steps 720000/30000000 | FPS 704[0m
+[32m2026-03-14 14:17:58.265[0m | [1mINFO    [0m | [36mph2.runner.shared.overcooked_runner[0m:[36mrun[0m:[36m455[0m - [1m[PH2] cramped_room | ep 9/375 | steps 800000/30000000 | FPS 708[0m
+[32m2026-03-14 14:19:49.922[0m | [1mINFO    [0m | [36mph2.runner.shared.overcooked_runner[0m:[36mrun[0m:[36m455[0m - [1m[PH2] cramped_room | ep 10/375 | steps 880000/30000000 | FPS 709[0m
+[32m2026-03-14 14:21:40.715[0m | [1mINFO    [0m | [36mph2.runner.shared.overcooked_runner[0m:[36mrun[0m:[36m455[0m - [1m[PH2] cramped_room | ep 11/375 | steps 960000/30000000 | FPS 710[0m
+[32m2026-03-14 14:23:27.192[0m | [1mINFO    [0m | [36mph2.runner.shared.overcooked_runner[0m:[36mrun[0m:[36m455[0m - [1m[PH2] cramped_room | ep 12/375 | steps 1040000/30000000 | FPS 713[0m
+[32m2026-03-14 14:25:18.393[0m | [1mINFO    [0m | [36mph2.runner.shared.overcooked_runner[0m:[36mrun[0m:[36m455[0m - [1m[PH2] cramped_room | ep 13/375 | steps 1120000/30000000 | FPS 713[0m
+[32m2026-03-14 14:27:11.027[0m | [1mINFO    [0m | [36mph2.runner.shared.overcooked_runner[0m:[36mrun[0m:[36m455[0m - [1m[PH2] cramped_room | ep 14/375 | steps 1200000/30000000 | FPS 713[0m
+[32m2026-03-14 14:29:0

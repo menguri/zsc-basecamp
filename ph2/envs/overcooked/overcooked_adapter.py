@@ -13,14 +13,22 @@ if _ZSC_ROOT not in sys.path:
 
 from zsceval.envs.overcooked_new.Overcooked_Env import Overcooked as _OvercookedNew
 from zsceval.envs.env_wrappers import ShareDummyVecEnv, ShareSubprocDummyBatchVecEnv
+from zsceval.utils.train_util import setup_seed
 
 
 def make_train_env(all_args, run_dir):
     """Create vectorised training environment."""
+    def _safe_seed(env, seed):
+        try:
+            env.seed(seed)
+        except (AttributeError, TypeError):
+            # gym/gymnasium API difference: some Env bases do not expose seed().
+            setup_seed(seed)
+
     def get_env_fn(rank):
         def init_env():
             env = _OvercookedNew(all_args, run_dir)
-            env.seed(all_args.seed + rank * 1000)
+            _safe_seed(env, all_args.seed + rank * 1000)
             return env
         return init_env
 
@@ -35,10 +43,16 @@ def make_train_env(all_args, run_dir):
 
 def make_eval_env(all_args, run_dir):
     """Create vectorised evaluation environment."""
+    def _safe_seed(env, seed):
+        try:
+            env.seed(seed)
+        except (AttributeError, TypeError):
+            setup_seed(seed)
+
     def get_env_fn(rank):
         def init_env():
             env = _OvercookedNew(all_args, run_dir, evaluation=True)
-            env.seed(all_args.seed * 50000 + rank * 10000)
+            _safe_seed(env, all_args.seed * 50000 + rank * 10000)
             return env
         return init_env
 

@@ -1,0 +1,28 @@
+{"time":"2026-03-14T13:59:08.139779928Z","level":"INFO","msg":"main: starting server","port-filename":"/tmp/tmphuowlqax/port-3487446.txt","pid":3487446,"log-level":0,"disable-analytics":false,"shutdown-on-parent-exit":false,"enable-dcgm-profiling":false}
+{"time":"2026-03-14T13:59:08.140474778Z","level":"INFO","msg":"server: will exit if parent process dies","ppid":3487446}
+{"time":"2026-03-14T13:59:08.140392044Z","level":"INFO","msg":"server: accepting connections","addr":{"Name":"/tmp/wandb-3487446-3488664-1889378430/socket","Net":"unix"}}
+{"time":"2026-03-14T13:59:08.292598486Z","level":"INFO","msg":"connection: ManageConnectionData: new connection created","id":"1(@)"}
+{"time":"2026-03-14T13:59:08.308850914Z","level":"INFO","msg":"handleInformInit: received","streamId":"w2a7qbvx","id":"1(@)"}
+{"time":"2026-03-14T13:59:08.337825289Z","level":"INFO","msg":"main: starting server","port-filename":"/tmp/tmp3g5jflni/port-3487447.txt","pid":3487447,"log-level":0,"disable-analytics":false,"shutdown-on-parent-exit":false,"enable-dcgm-profiling":false}
+{"time":"2026-03-14T13:59:08.338597783Z","level":"INFO","msg":"server: will exit if parent process dies","ppid":3487447}
+{"time":"2026-03-14T13:59:08.338476383Z","level":"INFO","msg":"server: accepting connections","addr":{"Name":"/tmp/wandb-3487447-3488700-3298882808/socket","Net":"unix"}}
+{"time":"2026-03-14T13:59:08.491912797Z","level":"INFO","msg":"connection: ManageConnectionData: new connection created","id":"1(@)"}
+{"time":"2026-03-14T13:59:08.506004225Z","level":"INFO","msg":"handleInformInit: received","streamId":"s95sgx3w","id":"1(@)"}
+{"time":"2026-03-14T13:59:08.626321193Z","level":"INFO","msg":"main: starting server","port-filename":"/tmp/tmpt6f9svr2/port-3487444.txt","pid":3487444,"log-level":0,"disable-analytics":false,"shutdown-on-parent-exit":false,"enable-dcgm-profiling":false}
+{"time":"2026-03-14T13:59:08.627401334Z","level":"INFO","msg":"server: will exit if parent process dies","ppid":3487444}
+{"time":"2026-03-14T13:59:08.627274622Z","level":"INFO","msg":"server: accepting connections","addr":{"Name":"/tmp/wandb-3487444-3488870-1319567011/socket","Net":"unix"}}
+{"time":"2026-03-14T13:59:08.658765584Z","level":"INFO","msg":"handleInformInit: stream started","streamId":"w2a7qbvx","id":"1(@)"}
+{"time":"2026-03-14T13:59:08.763938797Z","level":"INFO","msg":"main: starting server","port-filename":"/tmp/tmpm6x5yvo7/port-3487449.txt","pid":3487449,"log-level":0,"disable-analytics":false,"shutdown-on-parent-exit":false,"enable-dcgm-profiling":false}
+{"time":"2026-03-14T13:59:08.764979211Z","level":"INFO","msg":"server: will exit if parent process dies","ppid":3487449}
+{"time":"2026-03-14T13:59:08.764877541Z","level":"INFO","msg":"server: accepting connections","addr":{"Name":"/tmp/wandb-3487449-3488902-3433616700/socket","Net":"unix"}}
+{"time":"2026-03-14T13:59:08.781372946Z","level":"INFO","msg":"connection: ManageConnectionData: new connection created","id":"1(@)"}
+{"time":"2026-03-14T13:59:08.797905612Z","level":"INFO","msg":"handleInformInit: received","streamId":"ggi5tvdr","id":"1(@)"}
+{"time":"2026-03-14T13:59:08.853404738Z","level":"INFO","msg":"handleInformInit: stream started","streamId":"s95sgx3w","id":"1(@)"}
+{"time":"2026-03-14T13:59:08.918528542Z","level":"INFO","msg":"connection: ManageConnectionData: new connection created","id":"1(@)"}
+{"time":"2026-03-14T13:59:08.932295419Z","level":"INFO","msg":"handleInformInit: received","streamId":"oqthy32n","id":"1(@)"}
+{"time":"2026-03-14T13:59:09.149325027Z","level":"INFO","msg":"handleInformInit: stream started","streamId":"ggi5tvdr","id":"1(@)"}
+{"time":"2026-03-14T13:59:09.285514123Z","level":"INFO","msg":"handleInformInit: stream started","streamId":"oqthy32n","id":"1(@)"}
+{"time":"2026-03-14T13:59:14.29064759Z","level":"INFO","msg":"connection: cancelling request","id":"1(@)","requestId":"baqzvq7ij5oe"}
+{"time":"2026-03-14T13:59:14.379347129Z","level":"INFO","msg":"connection: cancelling request","id":"1(@)","requestId":"bw52l70kcmfb"}
+{"time":"2026-03-14T13:59:14.751499805Z","level":"INFO","msg":"connection: cancelling request","id":"1(@)","requestId":"4w0obn632txr"}
+{"time":"2026-03-14T13:59:14.787163751Z","level":"INFO","msg":"connection: cancelling request","id":"1(@)","requestId":"kjzzs2hj312r"}

@@ -32,7 +32,7 @@ class PH2Buffer(SharedReplayBuffer):
       obs_history          : (T, n_envs, n_agents, L, *obs_shape)  float32
       act_history          : (T, n_envs, n_agents, L)              int64
       partner_pred_context : (T, n_envs, n_agents, pred_dim)       float32
-      blocked_features     : (T, n_envs, n_agents, hidden_size)    float32  (spec only)
+      blocked_features     : (T, n_envs, n_agents, blocked_feat_dim) float32 (spec only, K-slot concat)
     """
 
     def __init__(
@@ -44,7 +44,7 @@ class PH2Buffer(SharedReplayBuffer):
         act_space,
         history_len: int = 5,
         pred_dim: int = 0,
-        hidden_size: int = 64,
+        blocked_feat_dim: int = 64,
         n_rollout_threads=None,
     ):
         super().__init__(args, num_agents, obs_space, share_obs_space, act_space,
@@ -63,9 +63,9 @@ class PH2Buffer(SharedReplayBuffer):
         self.obs_history = np.zeros((T, N, M, history_len, *obs_shape), dtype=np.float32)
         self.act_history = np.zeros((T, N, M, history_len), dtype=np.int64)
         self.partner_pred_context = np.zeros((T, N, M, max(pred_dim, 1)), dtype=np.float32)
-        self.blocked_features = np.zeros((T, N, M, hidden_size), dtype=np.float32)
+        self.blocked_features = np.zeros((T, N, M, blocked_feat_dim), dtype=np.float32)
         self._pred_dim = pred_dim
-        self._hidden_size = hidden_size
+        self._blocked_feat_dim = blocked_feat_dim
 
     # ------------------------------------------------------------------
     # insert override

@@ -28,7 +28,15 @@ def make_eval_env(all_args, run_dir):
             else:
                 print("Can not support the " + all_args.env_name + "environment.")
                 raise NotImplementedError
-            env.seed(all_args.seed * 50000 + rank * 10000)
+            seed_value = all_args.seed * 50000 + rank * 10000
+            try:
+                env.seed(seed_value)
+            except Exception:
+                # Gym/Gymnasium compatibility path for envs that no longer expose seed().
+                try:
+                    env.reset(seed=seed_value)
+                except TypeError:
+                    env.reset()
             return env
 
         return init_env
@@ -230,8 +238,10 @@ def main(args):
     if all_args.use_wandb:
         run.finish()
     else:
-        runner.writter.export_scalars_to_json(str(runner.log_dir + "/summary.json"))
-        runner.writter.close()
+        # In render-only runs, BaseRunner may not create tensorboard writer/log_dir.
+        if hasattr(runner, "writter") and hasattr(runner, "log_dir"):
+            runner.writter.export_scalars_to_json(str(runner.log_dir + "/summary.json"))
+            runner.writter.close()
 
 
 if __name__ == "__main__":
