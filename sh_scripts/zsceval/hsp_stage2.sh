@@ -12,7 +12,7 @@ entropy_coef_horizons="0 2.5e7 5e7"
 reward_shaping_horizon="5e7"
 num_env_steps="5e7"
 pop="hsp"
-mep_exp="mep-S1-s5"
+mep_exp="mep-S1-s12"
 
 export POLICY_POOL="${ZSCEVAL_POLICY_POOL}"
 ulimit -n 65536 2>/dev/null || ulimit -n 4096
@@ -21,6 +21,9 @@ if [ -n "$1" ]; then run_layouts=("$1"); else run_layouts=("${LAYOUTS[@]}"); fi
 
 for layout in "${run_layouts[@]}"; do
     echo "=== ZSC-EVAL HSP Stage2 | layout=${layout} ==="
+    echo "  [prep] gen_hsp_S2_ymls.py -l ${layout} -s 12 -S ${population_size}"
+    run_zsceval_prep gen_hsp_S2_ymls.py -l "${layout}" -s 12 -S "${population_size}"
+
     for seed in $(seq ${SEED_BEGIN} ${SEED_END}); do
         echo "  seed=${seed}"
         CUDA_VISIBLE_DEVICES=${GPU} python "${ZSCEVAL_TRAIN_DIR}/train_adaptive.py" \

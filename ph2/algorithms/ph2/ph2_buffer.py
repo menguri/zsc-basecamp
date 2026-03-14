@@ -27,14 +27,26 @@ class PH2Buffer(SharedReplayBuffer):
     Extends SharedReplayBuffer with PH2-specific fields.
 
     Extra fields (all stored for episode_length steps, no +1):
-      train_masks   : (T, n_envs, n_agents, 1)    float32
-      partner_actions: (T, n_envs, n_agents, 1)   int64
-      obs_history   : (T, n_envs, n_agents, L, *obs_shape)  float32
-      act_history   : (T, n_envs, n_agents, L)    int64
+      train_masks          : (T, n_envs, n_agents, 1)              float32
+      partner_actions      : (T, n_envs, n_agents, 1)              int64
+      obs_history          : (T, n_envs, n_agents, L, *obs_shape)  float32
+      act_history          : (T, n_envs, n_agents, L)              int64
+      partner_pred_context : (T, n_envs, n_agents, pred_dim)       float32
+      blocked_features     : (T, n_envs, n_agents, hidden_size)    float32  (spec only)
     """
 
-    def __init__(self, args, num_agents, obs_space, share_obs_space, act_space,
-                 history_len: int = 5, n_rollout_threads=None):
+    def __init__(
+        self,
+        args,
+        num_agents,
+        obs_space,
+        share_obs_space,
+        act_space,
+        history_len: int = 5,
+        pred_dim: int = 0,
+        hidden_size: int = 64,
+        n_rollout_threads=None,
+    ):
         super().__init__(args, num_agents, obs_space, share_obs_space, act_space,
                          n_rollout_threads=n_rollout_threads)
         self.history_len = history_len
@@ -50,6 +62,10 @@ class PH2Buffer(SharedReplayBuffer):
         self.partner_actions = np.zeros((T, N, M, 1), dtype=np.int64)
         self.obs_history = np.zeros((T, N, M, history_len, *obs_shape), dtype=np.float32)
         self.act_history = np.zeros((T, N, M, history_len), dtype=np.int64)
+        self.partner_pred_context = np.zeros((T, N, M, max(pred_dim, 1)), dtype=np.float32)
+        self.blocked_features = np.zeros((T, N, M, hidden_size), dtype=np.float32)
+        self._pred_dim = pred_dim
+        self._hidden_size = hidden_size
 
     # ------------------------------------------------------------------
     # insert override
@@ -73,6 +89,8 @@ class PH2Buffer(SharedReplayBuffer):
         partner_actions=None,
         obs_history=None,
         act_history=None,
+        partner_pred_context=None,
+        blocked_features=None,
     ):
         super().insert(
             share_obs, obs, rnn_states, rnn_states_critic,
@@ -89,6 +107,10 @@ class PH2Buffer(SharedReplayBuffer):
             self.obs_history[step] = obs_history.copy()
         if act_history is not None:
             self.act_history[step] = act_history.copy()
+        if partner_pred_context is not None:
+            self.partner_pred_context[step] = partner_pred_context.copy()
+        if blocked_features is not None:
+            self.blocked_features[step] = blocked_features.copy()
 
     # ------------------------------------------------------------------
     # after_update: reset PH2 fields
@@ -97,6 +119,8 @@ class PH2Buffer(SharedReplayBuffer):
         super().after_update()
         self.train_masks[:] = 1.0
         self.partner_actions[:] = 0
+        self.partner_pred_context[:] = 0.0
+        self.blocked_features[:] = 0.0
 
     # ------------------------------------------------------------------
     # recurrent_generator override: appends PH2 fields at the end
@@ -148,6 +172,14 @@ class PH2Buffer(SharedReplayBuffer):
         # act_history: (T, N, M, L) → (N*M*T, L)
         act_history = self.act_history.transpose(1, 2, 0, 3).reshape(-1, self.history_len)
 
+        # partner_pred_context: (T, N, M, pred_dim) → (N*M*T, pred_dim)
+        pred_dim = self.partner_pred_context.shape[-1]
+        partner_pred_context = self.partner_pred_context.transpose(1, 2, 0, 3).reshape(-1, pred_dim)
+
+        # blocked_features: (T, N, M, hidden) → (N*M*T, hidden)
+        h_dim = self.blocked_features.shape[-1]
+        blocked_features = self.blocked_features.transpose(1, 2, 0, 3).reshape(-1, h_dim)
+
         for indices in sampler:
             share_obs_batch, obs_batch = [], []
             rnn_states_batch, rnn_states_critic_batch = [], []
@@ -156,6 +188,7 @@ class PH2Buffer(SharedReplayBuffer):
             active_masks_batch, old_action_log_probs_batch, adv_targ = [], [], []
             train_masks_batch, partner_actions_batch = [], []
             obs_history_batch, act_history_batch = [], []
+            partner_pred_context_batch, blocked_features_batch = [], []
 
             for index in indices:
                 ind = index * data_chunk_length
@@ -177,6 +210,8 @@ class PH2Buffer(SharedReplayBuffer):
                 partner_actions_batch.append(partner_actions[ind:ind + data_chunk_length])
                 obs_history_batch.append(obs_history[ind:ind + data_chunk_length])
                 act_history_batch.append(act_history[ind:ind + data_chunk_length])
+                partner_pred_context_batch.append(partner_pred_context[ind:ind + data_chunk_length])
+                blocked_features_batch.append(blocked_features[ind:ind + data_chunk_length])
 
             L, N = data_chunk_length, mini_batch_size
 
@@ -200,6 +235,8 @@ class PH2Buffer(SharedReplayBuffer):
             partner_actions_batch = _flatten(L, N, np.stack(partner_actions_batch, axis=1))
             obs_history_batch = _flatten(L, N, np.stack(obs_history_batch, axis=1))
             act_history_batch = _flatten(L, N, np.stack(act_history_batch, axis=1))
+            partner_pred_context_batch = _flatten(L, N, np.stack(partner_pred_context_batch, axis=1))
+            blocked_features_batch = _flatten(L, N, np.stack(blocked_features_batch, axis=1))
 
             yield (
                 share_obs_batch, obs_batch,
@@ -210,4 +247,5 @@ class PH2Buffer(SharedReplayBuffer):
                 # PH2 extras:
                 train_masks_batch, partner_actions_batch,
                 obs_history_batch, act_history_batch,
+                partner_pred_context_batch, blocked_features_batch,
             )

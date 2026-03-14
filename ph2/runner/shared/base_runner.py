@@ -95,16 +95,16 @@ class PH2BaseRunner:
                 reinit=True,
                 tags=getattr(args, "wandb_tags", []),
             )
-            self.save_dir = str(wandb.run.dir)
-            self.run_dir  = str(wandb.run.dir)
+            self.run_dir = str(run_dir)
         else:
             self.run_dir  = str(run_dir)
             log_dir = str(run_dir / "logs")
             os.makedirs(log_dir, exist_ok=True)
             if SummaryWriter is not None:
                 self.writter = SummaryWriter(log_dir)
-            self.save_dir = str(run_dir / "models")
-            os.makedirs(self.save_dir, exist_ok=True)
+
+        self.save_dir = str(run_dir / "models")
+        os.makedirs(self.save_dir, exist_ok=True)
 
         # ---- policy_config.pkl (ZSC-EVAL eval compat) ----
         share_obs_space = (

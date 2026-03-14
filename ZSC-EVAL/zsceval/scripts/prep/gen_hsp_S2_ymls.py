@@ -59,6 +59,7 @@ def select_policies(runs, metric_np, K):
 
 
 MEP_EXPS = {
+    12: "mep-S1-s12",
     5: "mep-S1-s5",
     10: "mep-S1-s10",
     15: "mep-S1-s15",
@@ -71,7 +72,7 @@ def parse_args():
     parser.add_argument("--num_agents", type=int, default=2)
     parser.add_argument("-l", "--layout", type=str, required=True, help="layout name")
     parser.add_argument("-k", type=int, default=6, help="number of selected policies")
-    parser.add_argument("-s", type=int, default=5, help="population size of S1")
+    parser.add_argument("-s", type=int, default=12, help="population size of S1")
     parser.add_argument("-S", type=int, default=12, help="population size of training")
     parser.add_argument("--eval_result_dir", type=str, default="eval/results")
     parser.add_argument("--policy_pool_path", type=str, default="../policy_pool")

@@ -4,6 +4,8 @@ from loguru import logger
 from ph2.algorithms.r_mappo.algorithm.r_actor_critic import R_Actor, R_Critic
 from zsceval.utils.util import update_linear_schedule
 
+# PH2Actor is imported lazily in PH2Policy to avoid circular imports
+
 
 class ExDataParallel(torch.nn.DataParallel):
     def __getattr__(self, name):
@@ -165,3 +167,87 @@ class R_MAPPOPolicy:
     def prep_rollout(self):
         self.actor.eval()
         self.critic.eval()
+
+
+class PH2Policy(R_MAPPOPolicy):
+    """
+    R_MAPPOPolicy that uses PH2Actor (with pred_context / blocked_features injection).
+
+    Extra constructor args:
+        pred_dim        : dim of partner-pred context vector (default: 0 = disabled)
+        use_blocked     : whether spec policy uses blocked-state features
+        blocked_feat_dim: dim of blocked features (typically hidden_size)
+    """
+
+    def __init__(
+        self,
+        args,
+        obs_space,
+        share_obs_space,
+        act_space,
+        device=torch.device("cpu"),
+        pred_dim: int = 0,
+        use_blocked: bool = False,
+        blocked_feat_dim: int = 0,
+    ):
+        super().__init__(args, obs_space, share_obs_space, act_space, device)
+
+        # Replace vanilla R_Actor with PH2Actor
+        from ph2.algorithms.ph2.ph2_actor import PH2Actor
+        self.actor = PH2Actor(
+            args, obs_space, act_space, device,
+            pred_dim=pred_dim,
+            use_blocked=use_blocked,
+            blocked_feat_dim=blocked_feat_dim,
+        )
+        # Re-create actor optimizer for the new actor's parameters
+        self.actor_optimizer = torch.optim.Adam(
+            self.actor.parameters(),
+            lr=self.lr,
+            eps=self.opti_eps,
+            weight_decay=self.weight_decay,
+        )
+
+    def get_actions(
+        self,
+        share_obs,
+        obs,
+        rnn_states_actor,
+        rnn_states_critic,
+        masks,
+        available_actions=None,
+        deterministic=False,
+        task_id=None,
+        pred_context=None,
+        blocked_features=None,
+        **kwargs,
+    ):
+        actions, action_log_probs, rnn_states_actor = self.actor(
+            obs, rnn_states_actor, masks, available_actions, deterministic,
+            pred_context=pred_context,
+            blocked_features=blocked_features,
+        )
+        values, rnn_states_critic = self.critic(share_obs, rnn_states_critic, masks, task_id=task_id)
+        return values, actions, action_log_probs, rnn_states_actor, rnn_states_critic
+
+    def evaluate_actions(
+        self,
+        share_obs,
+        obs,
+        rnn_states_actor,
+        rnn_states_critic,
+        action,
+        masks,
+        available_actions=None,
+        active_masks=None,
+        task_id=None,
+        pred_context=None,
+        blocked_features=None,
+    ):
+        action_log_probs, dist_entropy, policy_values = self.actor.evaluate_actions(
+            obs, rnn_states_actor, action, masks, available_actions, active_masks,
+            pred_context=pred_context,
+            blocked_features=blocked_features,
+        )
+        values, _ = self.critic(share_obs, rnn_states_critic, masks, task_id=task_id)
+        return values, action_log_probs, dist_entropy, policy_values

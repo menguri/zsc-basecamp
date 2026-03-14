@@ -8,33 +8,20 @@ policy_pool_dir = "../policy_pool"
 
 S1_POP_EXPS = {
     "fcp": {
-        15: "sp",
-        10: "sp",
-        5: "sp",
+        12: "sp",
     },
     "mep": {
-        15: "mep-S1-s15",
-        10: "mep-S1-s10",
-        5: "mep-S1-s5",
+        12: "mep-S1-s12",
     },
     "traj": {
-        15: "traj-S1-s15",
-        10: "traj-S1-s10",
-        5: "traj-S1-s5",
+        12: "traj-S1-s12",
     },
 }
 
-# Overcooked
-TOTAL_SIZE_LIST = [15, 10, 5]
-POP_SIZE_LIST = [12, 8, 4]
-# TOTAL_SIZE_LIST = [10, 5]
-# POP_SIZE_LIST = [8, 4]
-# TOTAL_SIZE_LIST = [5]
-# POP_SIZE_LIST = [4]
-
-# GRF
-# TOTAL_SIZE_LIST = [5]
-# POP_SIZE_LIST = [3]
+# 12-centered setting used by zsc-basecamp/sh_scripts.
+# stage1 total population size=12, stage2 train population size=12 (= 4 * 3 checkpoints).
+TOTAL_SIZE_LIST = [12]
+POP_SIZE_LIST = [4]
 
 N_REPEAT = 5
 
@@ -42,7 +29,7 @@ N_REPEAT = 5
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("layout", type=str)
-    parser.add_argument("alg", type=str)
+    parser.add_argument("alg", type=str, choices=["fcp", "mep", "traj"])
 
     args = parser.parse_args()
 
@@ -66,6 +53,8 @@ if __name__ == "__main__":
         for TOTAL_SIZE, POP_SIZE in zip(TOTAL_SIZE_LIST, POP_SIZE_LIST):
             exp = S1_POP_EXPS[args.alg][TOTAL_SIZE]
             source_dir = osp.join(policy_pool_dir, layout, args.alg, "s1", exp)
+            if not osp.isdir(source_dir):
+                raise FileNotFoundError(f"Source dir not found: {source_dir}")
             pt_lst = os.listdir(source_dir)
             logger.debug(pt_lst)
             pop_alg = args.alg if args.alg != "fcp" else "sp"

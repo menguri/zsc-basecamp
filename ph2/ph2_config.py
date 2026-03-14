@@ -46,6 +46,58 @@ def get_ph2_args(parser: argparse.ArgumentParser) -> argparse.ArgumentParser:
         default=5,
         help="Number of historical (obs, action) pairs fed to the partner predictor.",
     )
+    parser.add_argument(
+        "--ph2_share_pred",
+        action="store_true",
+        default=False,
+        help=(
+            "Share PartnerPredictionNet parameters between spec and ind policies. "
+            "If False (default), each policy has its own predictor trained independently."
+        ),
+    )
+
+    # ---- blocked states (spec only) ----
+    parser.add_argument(
+        "--ph2_spec_use_blocked",
+        action="store_true",
+        default=False,
+        help="Enable blocked-state penalty + actor input for spec policy.",
+    )
+    parser.add_argument(
+        "--ph2_num_blocked_slots",
+        type=int,
+        default=1,
+        help="K_max: maximum number of blocked obs per env per episode.",
+    )
+    parser.add_argument(
+        "--ph2_blocked_pool_size",
+        type=int,
+        default=200,
+        help="Max size of per-env FIFO pool from which blocked obs are sampled.",
+    )
+    # Penalty shape: omega * exp(-sigma * L2_dist)
+    parser.add_argument(
+        "--ph2_blocked_penalty_omega",
+        type=float,
+        default=1.0,
+        help="Scale (omega) for blocked-state L2-distance penalty on spec reward.",
+    )
+    parser.add_argument(
+        "--ph2_blocked_penalty_sigma",
+        type=float,
+        default=1.0,
+        help="Decay rate (sigma) for blocked-state L2-distance penalty on spec reward.",
+    )
+    # V_gap-based sampling temperature
+    parser.add_argument(
+        "--ph2_vgap_beta",
+        type=float,
+        default=1.0,
+        help=(
+            "Temperature beta for V_gap softmax sampling of blocked states. "
+            "Higher beta = more focused on states with large V_gap."
+        ),
+    )
 
     # ---- wandb project / entity override ----
     parser.add_argument("--wandb_project", type=str, default="zsc-basecamp",

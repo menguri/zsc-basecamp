@@ -25,6 +25,9 @@ if [ -n "$1" ]; then run_layouts=("$1"); else run_layouts=("${LAYOUTS[@]}"); fi
 
 for layout in "${run_layouts[@]}"; do
     echo "=== ZSC-EVAL FCP Stage2 | layout=${layout} ==="
+    echo "  [prep] gen_S2_yml.py ${layout} fcp"
+    run_zsceval_prep gen_S2_yml.py "${layout}" fcp
+
     for seed in $(seq ${SEED_BEGIN} ${SEED_END}); do
         echo "  seed=${seed}"
         CUDA_VISIBLE_DEVICES=${GPU} python "${ZSCEVAL_TRAIN_DIR}/train_adaptive.py" \

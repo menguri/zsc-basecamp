@@ -71,3 +71,14 @@ setup_dirs() {
     mkdir -p "${ZSCEVAL_POLICY_POOL}"
     mkdir -p "${GAMMA_POLICY_POOL}"
 }
+
+# ── ZSC-EVAL prep helper ──────────────────────────────────────────────────────
+# Run prep scripts from ZSC-EVAL root so their relative paths (../policy_pool) resolve to zsc-basecamp/policy_pool.
+run_zsceval_prep() {
+    local script="$1"
+    shift
+    (
+        cd "${ZSCEVAL_ROOT}" || exit 1
+        python "zsceval/scripts/prep/${script}" "$@"
+    )
+}
