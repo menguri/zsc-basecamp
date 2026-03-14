@@ -270,3 +270,123 @@ PH2는 "spec/ind 두 정책을 교대로 학습하는 듀얼 PPO+E3T"이며, MAP
 - 예시 근거:
   - `GAMMA/mapbt/scripts/train_overcooked_bc.sh:5-7`
   - `ZSC-EVAL/zsceval/human_exp/overcooked_utils.py:13-18`
+
+---
+
+## 7) `zsc-basecamp/ph2` 독립 구현 계획 (Claude Opus 전달용)
+
+요구사항 재정의:
+
+- 구현 위치: `zsc-basecamp/ph2` 내부에서만 학습 파이프라인 동작
+- 알고리즘 기반: **ZSC-EVAL의 MAPPO 네트워크/기본 하이퍼파라미터를 최대한 동일하게 사용**
+- 환경: Overcooked 동작/관측/`share_obs` 규칙을 GAMMA/ZSC-EVAL과 동일하게 유지
+- 금지: `ex-overcookedv2` 코드 직접 import/의존 금지
+- 저장 포맷: GAMMA/ZSC-EVAL eval 파이프라인과 충돌 없도록 파일 형식/경로 규약 유지
+
+### 7-1. 목표 디렉토리 구조
+
+```text
+zsc-basecamp/ph2/
+  README.md
+  ph2_config.py
+  scripts/
+    train/
+      train_ph2.py
+  runner/
+    shared/
+      base_runner.py
+      overcooked_runner.py
+  algorithms/
+    r_mappo/
+      algorithm/
+        rMAPPOPolicy.py
+      r_mappo.py
+    ph2/
+      ph2_trainer.py
+      ph2_buffer.py
+      ph2_utils.py
+  envs/
+    overcooked/
+      overcooked_adapter.py
+```
+
+원칙:
+
+- `algorithms/r_mappo/*`는 ZSC-EVAL 구현을 거의 그대로 가져오고, 변경은 최소화
+- PH2 고유 로직(spec/ind role, match schedule, pred loss)은 `algorithms/ph2/*`에만 추가
+- Overcooked 엔진은 `ZSC-EVAL/zsceval/envs/overcooked_new`를 호출/랩핑해 동일 동작 보장
+
+### 7-2. 구현 단계 (실행 순서)
+
+1. 베이스라인 고정
+- ZSC-EVAL `r_mappo` policy/trainer, runner 인터페이스를 `ph2`로 복사
+- 우선 PH2 없이 plain MAPPO 1-step 학습이 도는지 확인
+
+2. 환경 어댑터 고정
+- `overcooked_adapter.py`에서 obs/share_obs/action_space를 ZSC-EVAL과 동일하게 노출
+- `share_obs = agent obs concat` 규칙을 강제 (`[obs_i, obs_j]` 순서 유지)
+
+3. PH2 듀얼-브랜치 추가
+- `ph2_trainer.py`에서 `spec_policy`, `ind_policy` 2개 유지
+- update 한 번당 `spec_step -> ind_step` 순서 적용
+- role/match 마스크로 샘플 사용 범위를 분리
+
+4. 손실 결합
+- PPO loss(clip/value/entropy)는 ZSC-EVAL MAPPO 코드 경로 재사용
+- PH2 pred loss(action pred 또는 state pred)만 추가 합산
+- critic 입력은 반드시 `share_obs`
+
+5. 저장/복구 호환
+- 기본 저장 규약 유지:
+  - `models/actor.pt`
+  - `models/critic.pt`
+  - `policy_config.pkl`
+- 듀얼 정책은 추가 파일로 확장:
+  - `models/spec_actor.pt`, `models/spec_critic.pt`
+  - `models/ind_actor.pt`, `models/ind_critic.pt`
+- eval 호환을 위해 `actor.pt/critic.pt`는 기본 branch(예: `ind`)를 가리키도록 유지
+
+6. 검증
+- 기존 ZSC-EVAL eval 스크립트로 `actor.pt/critic.pt` 로딩 성공 확인
+- PH2 전용 eval은 `spec_*`/`ind_*`를 선택적으로 로딩하도록 별도 옵션 제공
+
+### 7-3. 기본 파라미터 정렬 규칙
+
+- 시작점은 `ZSC-EVAL/zsceval/overcooked_config.py`와 동일
+- 반드시 동일하게 유지할 항목:
+  - `hidden_size`, `layer_N`, `use_orthogonal`, `use_valuenorm`
+  - `ppo_epoch`, `clip_param`, `num_mini_batch`
+  - `lr`, `critic_lr`, `opti_eps`, `weight_decay`
+  - `episode_length`, `n_rollout_threads`, `num_env_steps`
+- PH2 전용 항목만 신규 추가:
+  - `ph2_role`, `ph2_fixed_ind_prob`, `ph2_ratio_stage1/2/3`
+  - `ph2_pred_coef`, `ph2_state_pred`, `ph2_match_schedule`
+
+### 7-4. 저장 포맷 호환 계약 (필수)
+
+아래 4개는 기존 eval/restore 호환을 위한 최소 계약이다.
+
+1. `policy_config.pkl` payload 형식:
+- `(all_args, obs_space, share_obs_space, action_space)` 튜플 유지
+
+2. 모델 파일명:
+- 단일 정책 평가 경로는 기존과 동일하게 `actor.pt`, `critic.pt` 사용
+
+3. 실행 결과 경로:
+- `.../results/Overcooked/<layout>/<algo>/<exp>/runX/` 구조 유지
+
+4. restore 동작:
+- `model_dir`를 주면 기존 Runner restore 코드로 바로 로딩 가능해야 함
+
+### 7-5. Claude Opus 작업 지시문(복붙용)
+
+```text
+Implement PH2 under zsc-basecamp/ph2 without importing ex-overcookedv2.
+Reuse ZSC-EVAL MAPPO network and default hyperparameters as closely as possible.
+Use the same Overcooked behavior and share_obs construction rule as GAMMA/ZSC-EVAL (agent obs concatenation).
+Keep checkpoint/eval compatibility with GAMMA/ZSC-EVAL:
+- policy_config.pkl tuple format
+- models/actor.pt and models/critic.pt for default eval path
+- optional spec/ind branch checkpoints as extra files
+Deliver runnable train_ph2.py and compatibility smoke tests.
+```

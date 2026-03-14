@@ -3,3 +3,8 @@
 .venv-zsceval/
 .zsc-gamma/
 .zsc-zsceval/
+
+# Model checkpoints / weights
+*.pt
+*.pth
+*.ckpt
