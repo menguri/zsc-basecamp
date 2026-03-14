@@ -36,7 +36,7 @@ for layout in "${run_layouts[@]}"; do
             --num_mini_batch 1 --episode_length 400 \
             --num_env_steps ${num_env_steps} \
             --reward_shaping_horizon ${reward_shaping_horizon} \
-            --overcooked_version new --old_dynamics \
+            --overcooked_version new \
             --ppo_epoch 15 \
             --entropy_coefs ${entropy_coefs} \
             --entropy_coef_horizons ${entropy_coef_horizons} \

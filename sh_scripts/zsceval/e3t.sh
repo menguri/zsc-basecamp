@@ -21,7 +21,7 @@ for layout in "${run_layouts[@]}"; do
             --n_rollout_threads 100 --dummy_batch_size 2 \
             --num_mini_batch 1 --episode_length 400 \
             --num_env_steps 1e7 --reward_shaping_horizon 1e8 \
-            --overcooked_version new --old_dynamics \
+            --overcooked_version new \
             --ppo_epoch 15 \
             --entropy_coefs 0.2 0.05 0.01 --entropy_coef_horizons 0 6e6 1e7 \
             --share_policy --random_index \

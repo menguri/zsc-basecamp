@@ -1,0 +1,3 @@
+[submodule "mapbt/envs/overcooked/overcooked_berkeley"]
+	path = mapbt/envs/overcooked/overcooked_berkeley
+	url = https://github.com/lych1233/overcooked_berkeley

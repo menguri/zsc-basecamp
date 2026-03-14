@@ -38,7 +38,6 @@ for layout in "${run_layouts[@]}"; do
             --num_env_steps 1e7 \
             --reward_shaping_horizon 1e8 \
             --overcooked_version new \
-            --old_dynamics \
             --ppo_epoch 15 \
             --entropy_coefs 0.2 0.05 0.01 \
             --entropy_coef_horizons 0 5e6 1e7 \

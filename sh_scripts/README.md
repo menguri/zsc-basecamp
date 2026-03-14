@@ -28,55 +28,73 @@ sh_scripts/
 
 ---
 
-## 가상환경 분리 세팅 (권장)
+## GAMMA 가상환경 세팅 (Python 3.12 + uv)
 
-### 0) 자동 세팅 (한 번에 실행)
+아래 절차는 현재 사용 중인 GAMMA 실행 환경 기준입니다.
 
 ```bash
 cd zsc-basecamp
-bash sh_scripts/setup_venvs.sh
+
+# 1) Python 3.12 가상환경 생성
+uv venv .zsc-gamma --python 3.12
+
+# 2) 가상환경 활성화
+source .zsc-gamma/bin/activate
+
+# 3) PyTorch 설치 (CUDA 12.1)
+uv pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
+
+# 4) 필수 라이브러리 설치 (NumPy < 2.0)
+uv pip install "numpy<2.0" absl-py dill scipy tqdm gym pettingzoo ipython pygame ipywidgets opencv-python \
+wandb icecream setproctitle seaborn tensorboardX psutil slackweb pyastar2d einops h5py
+
+# 5) GAMMA(mapbt) 설치
+uv pip install -e ./GAMMA
+
+# 6) overcooked_ai_py 설치
+uv pip install -e ./GAMMA/mapbt/envs/overcooked/overcooked_berkeley
 ```
 
-위 명령으로 아래 2개 가상환경이 생성/설치됩니다.
-
-- `.venv-gamma` (GAMMA 전용)
-- `.venv-zsceval` (ZSC-EVAL 전용)
-
-### 1) 수동 세팅 명령어 (복붙용)
+실행 예시:
 
 ```bash
 cd zsc-basecamp
-
-# GAMMA 전용 venv
-uv venv --python python3 --no-managed-python --seed .venv-gamma
-source .venv-gamma/bin/activate
-uv pip install --python .venv-gamma/bin/python --upgrade pip setuptools wheel
-uv pip install --python .venv-gamma/bin/python -r GAMMA/requirements.txt
-uv pip install --python .venv-gamma/bin/python -e GAMMA
-deactivate
-
-# ZSC-EVAL 전용 venv
-uv venv --python python3 --no-managed-python --seed .venv-zsceval
-source .venv-zsceval/bin/activate
-uv pip install --python .venv-zsceval/bin/python --upgrade pip setuptools wheel
-(cd ZSC-EVAL && uv pip install --python ../.venv-zsceval/bin/python -r requirements.txt)
-deactivate
-```
-
-### 2) 실행할 때 환경 선택
-
-```bash
-cd zsc-basecamp
-
-# GAMMA 실행
-source .venv-gamma/bin/activate
+source .zsc-gamma/bin/activate
 bash sh_scripts/gamma/sp.sh
-deactivate
+```
 
-# ZSC-EVAL 실행
-source .venv-zsceval/bin/activate
+---
+
+## ZSC-EVAL 가상환경 세팅 (Python 3.9 + uv)
+
+`ZSC-EVAL/environment.yml` 기반 설정을 `uv`로 구성한 절차입니다.
+
+```bash
+cd zsc-basecamp
+
+# 1) Python 3.9 가상환경 생성
+uv venv .zsc-zsceval --python 3.9
+source .zsc-zsceval/bin/activate
+
+# 2) PyTorch + CUDA 11.8
+uv pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
+
+# 3) ZSC-EVAL 의존성 설치 (requirements.txt 안에 -e . 포함)
+cd ZSC-EVAL
+uv pip install -r requirements.txt
+
+# 4) environment.yml의 uwsgi 대응
+uv pip install uwsgi
+
+cd ..
+```
+
+실행 예시:
+
+```bash
+cd zsc-basecamp
+source .zsc-zsceval/bin/activate
 bash sh_scripts/zsceval/sp.sh
-deactivate
 ```
 
 ---

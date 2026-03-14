@@ -34,7 +34,7 @@ for layout in "${run_layouts[@]}"; do
             --seed ${seed} --n_training_threads 1 --num_mini_batch 1 \
             --episode_length 400 --num_env_steps ${num_env_steps} \
             --reward_shaping_horizon ${reward_shaping_horizon} \
-            --overcooked_version new --old_dynamics \
+            --overcooked_version new \
             --n_rollout_threads 100 --dummy_batch_size 2 \
             --ppo_epoch 15 \
             --entropy_coefs ${entropy_coefs} \

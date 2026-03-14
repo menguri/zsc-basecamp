@@ -25,7 +25,7 @@ for layout in "${run_layouts[@]}"; do
         --train_env_batch ${train_batch} --n_rollout_threads ${train_batch} --dummy_batch_size 1 \
         --num_mini_batch 1 --episode_length 400 \
         --num_env_steps 1e7 --reward_shaping_horizon 1e8 \
-        --overcooked_version new --old_dynamics \
+        --overcooked_version new \
         --ppo_epoch 15 \
         --entropy_coefs 0.2 0.05 0.01 --entropy_coef_horizons 0 6e6 1e7 \
         --stage 1 --mep_entropy_alpha 0.01 \
