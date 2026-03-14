@@ -21,6 +21,7 @@ if [ -n "$1" ]; then run_layouts=("$1"); else run_layouts=("${LAYOUTS[@]}"); fi
 
 for layout in "${run_layouts[@]}"; do
     echo "=== ZSC-EVAL COLE | layout=${layout}, pop=${population_size} ==="
+    ensure_zsceval_policy_config "${layout}"
     echo "  [prep] gen_cole_ymls.py ${layout} -s ${population_size}"
     run_zsceval_prep gen_cole_ymls.py "${layout}" -s "${population_size}"
 

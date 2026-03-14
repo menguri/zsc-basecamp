@@ -20,6 +20,7 @@ if [ -n "$1" ]; then run_layouts=("$1"); else run_layouts=("${LAYOUTS[@]}"); fi
 
 for layout in "${run_layouts[@]}"; do
     echo "=== ZSC-EVAL TrajeDi Stage2 | layout=${layout} ==="
+    ensure_zsceval_policy_config "${layout}"
     echo "  [prep] gen_S2_yml.py ${layout} traj"
     run_zsceval_prep gen_S2_yml.py "${layout}" traj
 

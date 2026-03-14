@@ -21,6 +21,7 @@ if [ -n "$1" ]; then run_layouts=("$1"); else run_layouts=("${LAYOUTS[@]}"); fi
 
 for layout in "${run_layouts[@]}"; do
     echo "=== ZSC-EVAL HSP Stage2 | layout=${layout} ==="
+    ensure_zsceval_policy_config "${layout}"
     echo "  [prep] gen_hsp_S2_ymls.py -l ${layout} -s 12 -S ${population_size}"
     run_zsceval_prep gen_hsp_S2_ymls.py -l "${layout}" -s 12 -S "${population_size}"
 

@@ -82,3 +82,75 @@ run_zsceval_prep() {
         python "zsceval/scripts/prep/${script}" "$@"
     )
 }
+
+# Ensure policy config pickles required by population YAMLs exist for a layout.
+# This mirrors store_config.sh + mv_policy_config.sh behavior but without hardcoded layouts.
+ensure_zsceval_policy_config() {
+    local layout="$1"
+    local policy_dir="${ZSCEVAL_POLICY_POOL}/${layout}/policy_config"
+    local mlp_cfg="${policy_dir}/mlp_policy_config.pkl"
+    local rnn_cfg="${policy_dir}/rnn_policy_config.pkl"
+
+    if [ -f "${mlp_cfg}" ] && [ -f "${rnn_cfg}" ]; then
+        return 0
+    fi
+
+    echo "  [prep] policy_config missing for ${layout}; generating store_config artifacts"
+    mkdir -p "${policy_dir}"
+
+    local -a store_args=(
+        --env_name Overcooked
+        --layout_name "${layout}"
+        --num_agents 2
+        --seed 1
+        --n_training_threads 1
+        --n_rollout_threads 50
+        --dummy_batch_size 1
+        --num_mini_batch 1
+        --episode_length 400
+        --num_env_steps 1e7
+        --reward_shaping_horizon 1e8
+        --overcooked_version new
+        --ppo_epoch 15
+        --entropy_coefs 0.2 0.05 0.001
+        --entropy_coef_horizons 0 6e6 1e7
+        --save_interval 25
+        --log_interval 10
+        --use_eval
+        --eval_interval 20
+        --n_eval_rollout_threads 10
+        --use_proper_time_limits
+        --cnn_layers_params "32,3,1,1 64,3,1,1 32,3,1,1"
+    )
+
+    CUDA_VISIBLE_DEVICES=${GPU} python "${ZSCEVAL_TRAIN_DIR}/train_sp.py" \
+        --algorithm_name mappo \
+        --experiment_name store_config_mlp \
+        "${store_args[@]}" \
+        --use_recurrent_policy
+
+    CUDA_VISIBLE_DEVICES=${GPU} python "${ZSCEVAL_TRAIN_DIR}/train_sp.py" \
+        --algorithm_name rmappo \
+        --experiment_name store_config_rnn \
+        "${store_args[@]}"
+
+    local mlp_run_root="${HOME}/ZSC/results/Overcooked/${layout}/mappo/store_config_mlp"
+    local rnn_run_root="${HOME}/ZSC/results/Overcooked/${layout}/rmappo/store_config_rnn"
+    local mlp_run_dir
+    local rnn_run_dir
+    mlp_run_dir="$(find "${mlp_run_root}" -maxdepth 1 -type d -name 'run*' | sort -V | tail -n 1)"
+    rnn_run_dir="$(find "${rnn_run_root}" -maxdepth 1 -type d -name 'run*' | sort -V | tail -n 1)"
+
+    if [ -z "${mlp_run_dir}" ] || [ ! -f "${mlp_run_dir}/policy_config.pkl" ]; then
+        echo "  [error] Failed to locate mlp policy_config.pkl under ${mlp_run_root}"
+        return 1
+    fi
+    if [ -z "${rnn_run_dir}" ] || [ ! -f "${rnn_run_dir}/policy_config.pkl" ]; then
+        echo "  [error] Failed to locate rnn policy_config.pkl under ${rnn_run_root}"
+        return 1
+    fi
+
+    cp "${mlp_run_dir}/policy_config.pkl" "${mlp_cfg}"
+    cp "${rnn_run_dir}/policy_config.pkl" "${rnn_cfg}"
+    echo "  [prep] policy_config ready: ${policy_dir}"
+}
