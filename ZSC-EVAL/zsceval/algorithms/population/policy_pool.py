@@ -128,28 +128,76 @@ class PolicyPool:
                         if override_policy_config[policy_name][w] is not None:
                             policy_config[w] = override_policy_config[policy_name][w]
                 policy_args = policy_config[0]
-                _, policy_cls = make_trainer_policy_cls(
-                    policy_args.algorithm_name,
-                    use_single_network=policy_args.use_single_network,
-                )
 
-                policy = policy_cls(*policy_config, device=self.device)
-                policy.to(torch.device("cpu"))
+                pred_model_path_str = population_config[policy_name].get("pred_model_path", None)
+                ind_actor_path_str = (population_config[policy_name].get("model_path") or {}).get("ind_actor", None)
 
-                if population_config[policy_name].get("model_path", None):
-                    if self.args.algorithm_type == "co-play":
-                        path_prefix = POLICY_POOL_PATH
-                    else:
-                        path_prefix = ACTOR_POOL_PATH
-                    model_path = add_path_prefix(path_prefix, population_config[policy_name]["model_path"])
-                    policy.load_checkpoint(model_path)
-                policy_train = False
-                if not evaluation and "train" in population_config[policy_name].keys():
-                    policy_train = population_config[policy_name]["train"]
-                if policy_train:
-                    policy.to_parallel()
-                if evaluation:
-                    policy = EvalPolicy(policy_args, policy)
+                if evaluation and pred_model_path_str and ind_actor_path_str:
+                    # PH2 ind policy: load PH2Actor + PartnerPredictionNet directly
+                    # without going through make_trainer_policy_cls/PH2Policy, so that
+                    # we never construct the critic and can pass pred_context to the actor.
+                    from ph2.algorithms.ph2.ph2_actor import PH2Actor
+                    from ph2.algorithms.ph2.e3t import PartnerPredictionNet
+                    from zsceval.utils.util import get_shape_from_obs_space
+                    from zsceval.algorithms.population.utils import PH2EvalPolicy
+
+                    obs_space = policy_config[1]
+                    act_space = policy_config[3]
+                    obs_shape = get_shape_from_obs_space(obs_space)
+                    obs_channels = obs_shape[2] if len(obs_shape) == 3 else obs_shape[0]
+                    act_dim = act_space.n
+                    history_len = getattr(policy_args, "ph2_history_len", 5)
+                    pred_dim = act_dim  # ind policy: pred_dim == action_dim
+
+                    actor = PH2Actor(
+                        policy_args, obs_space, act_space, self.device,
+                        pred_dim=pred_dim, use_blocked=False, blocked_feat_dim=0,
+                    )
+                    actor.load_state_dict(
+                        torch.load(ind_actor_path_str, map_location=self.device)
+                    )
+                    actor.eval()
+                    actor.to(torch.device("cpu"))
+
+                    pred_net = PartnerPredictionNet(obs_channels, act_dim, history_len)
+                    # StepWiseEncoder._mlp is lazily initialised on first forward.
+                    # Run a dummy pass now so the keys exist before load_state_dict.
+                    H, W = (obs_shape[0], obs_shape[1]) if len(obs_shape) == 3 else (1, 1)
+                    _dummy_obs = torch.zeros(1, history_len, H, W, obs_channels)
+                    _dummy_act = torch.zeros(1, history_len, dtype=torch.long)
+                    with torch.no_grad():
+                        pred_net(_dummy_obs, _dummy_act)
+                    pred_net.load_state_dict(
+                        torch.load(pred_model_path_str, map_location=self.device)
+                    )
+                    pred_net.eval()
+                    pred_net.to(torch.device("cpu"))
+
+                    policy = PH2EvalPolicy(policy_args, actor, pred_net)
+                    policy_train = False
+                else:
+                    _, policy_cls = make_trainer_policy_cls(
+                        policy_args.algorithm_name,
+                        use_single_network=policy_args.use_single_network,
+                    )
+
+                    policy = policy_cls(*policy_config, device=self.device)
+                    policy.to(torch.device("cpu"))
+
+                    if population_config[policy_name].get("model_path", None):
+                        if self.args.algorithm_type == "co-play":
+                            path_prefix = POLICY_POOL_PATH
+                        else:
+                            path_prefix = ACTOR_POOL_PATH
+                        model_path = add_path_prefix(path_prefix, population_config[policy_name]["model_path"])
+                        policy.load_checkpoint(model_path)
+                    policy_train = False
+                    if not evaluation and "train" in population_config[policy_name].keys():
+                        policy_train = population_config[policy_name]["train"]
+                    if policy_train:
+                        policy.to_parallel()
+                    if evaluation:
+                        policy = EvalPolicy(policy_args, policy)
                 policy_info = [policy_name, population_config[policy_name]]
                 self.register_policy(policy_name, policy, policy_config, policy_train, policy_info)
                 featurize_type[policy_name] = population_config[policy_name]["featurize_type"]

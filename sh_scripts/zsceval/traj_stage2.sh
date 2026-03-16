@@ -1,12 +1,13 @@
 #!/bin/bash
 # ZSC-EVAL - TrajeDi Stage 2
-# 전제조건: traj_stage1.sh 완료
+# 전제조건: traj_stage1.sh (pop=12) 완료, Stage2 pop=12 구성
 # Usage: bash traj_stage2.sh [layout]
 
 source "$(dirname "$0")/../common_args.sh"
 setup_dirs
 
 population_size=12
+s1_population_size=12
 entropy_coefs="0.2 0.05 0.01"
 entropy_coef_horizons="0 2.5e7 5e7"
 reward_shaping_horizon="5e7"
@@ -15,11 +16,18 @@ pop="traj-S1-s12"
 
 export POLICY_POOL="${ZSCEVAL_POLICY_POOL}"
 ulimit -n 65536 2>/dev/null || ulimit -n 4096
+BUILD_POOL_PY="${BASECAMP_DIR}/sh_scripts/zsceval/build_stage1_pool.py"
 
 if [ -n "$1" ]; then run_layouts=("$1"); else run_layouts=("${LAYOUTS[@]}"); fi
 
 for layout in "${run_layouts[@]}"; do
     echo "=== ZSC-EVAL TrajeDi Stage2 | layout=${layout} ==="
+    echo "  [prep] build stage1 pool from results (${layout}, traj)"
+    python "${BUILD_POOL_PY}" \
+        --repo_root "${BASECAMP_DIR}" \
+        --layout "${layout}" \
+        --algo traj \
+        --population_size "${s1_population_size}"
     ensure_zsceval_policy_config "${layout}"
     echo "  [prep] gen_S2_yml.py ${layout} traj"
     run_zsceval_prep gen_S2_yml.py "${layout}" traj

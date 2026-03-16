@@ -1,2 +1,7 @@
-xp_folder,layout,num_rows,reward_mean,reward_var,reward_std,source_csv
-xp_sp_sp,cramped_room,25,188.8000030517578,8986.5595703125,94.7974624633789,/home/mlic/mingukang/zsc-basecamp/eval/results/cramped_room/xp_sp_sp/csv/xp_pairs.csv
+xp_folder,layout,algo0,algo1,num_rows,sp,sp_std,xp,xp_std,reward_mean,reward_var,reward_std,source_csv
+xp_ph2_ph2,asymmetric_advantages,ph2,ph2,25,484.0,8.0,478.0,4.0,479.20001220703125,31.360002517700195,5.600000381469727,/home/mlic/mingukang/zsc-basecamp/eval/results/asymmetric_advantages/xp_ph2_ph2/csv/xp_pairs.csv
+xp_sp_sp,asymmetric_advantages,sp,sp,25,436.0,29.393877029418945,437.0,17.916473388671875,436.79998779296875,429.760009765625,20.730653762817383,/home/mlic/mingukang/zsc-basecamp/eval/results/asymmetric_advantages/xp_sp_sp/csv/xp_pairs.csv
+xp_ph2_bc,cramped_room,ph2,bc,25,,,0.0,0.0,0.0,0.0,0.0,/home/mlic/mingukang/zsc-basecamp/eval/results/cramped_room/xp_ph2_bc/csv/xp_pairs.csv
+xp_ph2_ph2,cramped_room,ph2,ph2,25,256.0,8.0,246.0,38.78144073486328,248.0,1232.0,35.099857330322266,/home/mlic/mingukang/zsc-basecamp/eval/results/cramped_room/xp_ph2_ph2/csv/xp_pairs.csv
+xp_sp_bc,cramped_room,sp,bc,25,,,4.400000095367432,17.681629180908203,4.400000095367432,312.6399841308594,17.681629180908203,/home/mlic/mingukang/zsc-basecamp/eval/results/cramped_room/xp_sp_bc/csv/xp_pairs.csv
+xp_sp_sp,cramped_room,sp,sp,25,260.0,0.0,171.0,98.22932434082031,188.8000030517578,8986.5595703125,94.7974624633789,/home/mlic/mingukang/zsc-basecamp/eval/results/cramped_room/xp_sp_sp/csv/xp_pairs.csv

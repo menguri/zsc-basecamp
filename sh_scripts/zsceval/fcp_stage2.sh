@@ -1,6 +1,6 @@
 #!/bin/bash
 # ZSC-EVAL - FCP Stage 2
-# 전제조건: SP로 12개 population 학습 완료 → POLICY_POOL에 저장
+# 전제조건: SP run 5개 완료 (각 run의 init/mid/final 사용해 Stage2 pop=15 구성)
 # Usage: bash fcp_stage2.sh [layout]
 
 source "$(dirname "$0")/../common_args.sh"
@@ -10,7 +10,8 @@ env="Overcooked"
 algo="adaptive"
 exp="fcp-S2"
 num_agents=2
-population_size=12
+population_size=15
+s1_population_size=5
 
 entropy_coefs="0.2 0.05 0.01"
 entropy_coef_horizons="0 2.5e7 5e7"
@@ -20,11 +21,18 @@ pop="sp"
 
 export POLICY_POOL="${ZSCEVAL_POLICY_POOL}"
 ulimit -n 65536 2>/dev/null || ulimit -n 4096
+BUILD_POOL_PY="${BASECAMP_DIR}/sh_scripts/zsceval/build_stage1_pool.py"
 
 if [ -n "$1" ]; then run_layouts=("$1"); else run_layouts=("${LAYOUTS[@]}"); fi
 
 for layout in "${run_layouts[@]}"; do
     echo "=== ZSC-EVAL FCP Stage2 | layout=${layout} ==="
+    echo "  [prep] build stage1 pool from results (${layout}, fcp)"
+    python "${BUILD_POOL_PY}" \
+        --repo_root "${BASECAMP_DIR}" \
+        --layout "${layout}" \
+        --algo fcp \
+        --population_size "${s1_population_size}"
     ensure_zsceval_policy_config "${layout}"
     echo "  [prep] gen_S2_yml.py ${layout} fcp"
     run_zsceval_prep gen_S2_yml.py "${layout}" fcp

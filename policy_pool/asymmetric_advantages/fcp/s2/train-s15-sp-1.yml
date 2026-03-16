@@ -1,0 +1,94 @@
+fcp_adaptive:
+    policy_config_path: asymmetric_advantages/policy_config/rnn_policy_config.pkl
+    featurize_type: ppo
+    train: True
+sp1_1:
+    policy_config_path: asymmetric_advantages/policy_config/mlp_policy_config.pkl
+    featurize_type: ppo
+    train: False
+    model_path:
+        actor: asymmetric_advantages/fcp/s1/sp/sp1_init_actor.pt
+sp1_2:
+    policy_config_path: asymmetric_advantages/policy_config/mlp_policy_config.pkl
+    featurize_type: ppo
+    train: False
+    model_path:
+        actor: asymmetric_advantages/fcp/s1/sp/sp1_mid_actor.pt
+sp1_3:
+    policy_config_path: asymmetric_advantages/policy_config/mlp_policy_config.pkl
+    featurize_type: ppo
+    train: False
+    model_path:
+        actor: asymmetric_advantages/fcp/s1/sp/sp1_final_actor.pt
+sp2_1:
+    policy_config_path: asymmetric_advantages/policy_config/mlp_policy_config.pkl
+    featurize_type: ppo
+    train: False
+    model_path:
+        actor: asymmetric_advantages/fcp/s1/sp/sp2_init_actor.pt
+sp2_2:
+    policy_config_path: asymmetric_advantages/policy_config/mlp_policy_config.pkl
+    featurize_type: ppo
+    train: False
+    model_path:
+        actor: asymmetric_advantages/fcp/s1/sp/sp2_mid_actor.pt
+sp2_3:
+    policy_config_path: asymmetric_advantages/policy_config/mlp_policy_config.pkl
+    featurize_type: ppo
+    train: False
+    model_path:
+        actor: asymmetric_advantages/fcp/s1/sp/sp2_final_actor.pt
+sp3_1:
+    policy_config_path: asymmetric_advantages/policy_config/mlp_policy_config.pkl
+    featurize_type: ppo
+    train: False
+    model_path:
+        actor: asymmetric_advantages/fcp/s1/sp/sp3_init_actor.pt
+sp3_2:
+    policy_config_path: asymmetric_advantages/policy_config/mlp_policy_config.pkl
+    featurize_type: ppo
+    train: False
+    model_path:
+        actor: asymmetric_advantages/fcp/s1/sp/sp3_mid_actor.pt
+sp3_3:
+    policy_config_path: asymmetric_advantages/policy_config/mlp_policy_config.pkl
+    featurize_type: ppo
+    train: False
+    model_path:
+        actor: asymmetric_advantages/fcp/s1/sp/sp3_final_actor.pt
+sp4_1:
+    policy_config_path: asymmetric_advantages/policy_config/mlp_policy_config.pkl
+    featurize_type: ppo
+    train: False
+    model_path:
+        actor: asymmetric_advantages/fcp/s1/sp/sp4_init_actor.pt
+sp4_2:
+    policy_config_path: asymmetric_advantages/policy_config/mlp_policy_config.pkl
+    featurize_type: ppo
+    train: False
+    model_path:
+        actor: asymmetric_advantages/fcp/s1/sp/sp4_mid_actor.pt
+sp4_3:
+    policy_config_path: asymmetric_advantages/policy_config/mlp_policy_config.pkl
+    featurize_type: ppo
+    train: False
+    model_path:
+        actor: asymmetric_advantages/fcp/s1/sp/sp4_final_actor.pt
+sp5_1:
+    policy_config_path: asymmetric_advantages/policy_config/mlp_policy_config.pkl
+    featurize_type: ppo
+    train: False
+    model_path:
+        actor: asymmetric_advantages/fcp/s1/sp/sp5_init_actor.pt
+sp5_2:
+    policy_config_path: asymmetric_advantages/policy_config/mlp_policy_config.pkl
+    featurize_type: ppo
+    train: False
+    model_path:
+        actor: asymmetric_advantages/fcp/s1/sp/sp5_mid_actor.pt
+sp5_3:
+    policy_config_path: asymmetric_advantages/policy_config/mlp_policy_config.pkl
+    featurize_type: ppo
+    train: False
+    model_path:
+        actor: asymmetric_advantages/fcp/s1/sp/sp5_final_actor.pt

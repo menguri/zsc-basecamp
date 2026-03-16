@@ -1,0 +1,21 @@
+{"time":"2026-03-16T02:11:16.157511046Z","level":"INFO","msg":"main: starting server","port-filename":"/tmp/tmpzlvsway1/port-994701.txt","pid":994701,"log-level":0,"disable-analytics":false,"shutdown-on-parent-exit":false,"enable-dcgm-profiling":false}
+{"time":"2026-03-16T02:11:16.158505127Z","level":"INFO","msg":"server: accepting connections","addr":{"Name":"/tmp/wandb-994701-995943-3771050992/socket","Net":"unix"}}
+{"time":"2026-03-16T02:11:16.158632928Z","level":"INFO","msg":"server: will exit if parent process dies","ppid":994701}
+{"time":"2026-03-16T02:11:16.237375991Z","level":"INFO","msg":"main: starting server","port-filename":"/tmp/tmp0pukbwab/port-994700.txt","pid":994700,"log-level":0,"disable-analytics":false,"shutdown-on-parent-exit":false,"enable-dcgm-profiling":false}
+{"time":"2026-03-16T02:11:16.238428257Z","level":"INFO","msg":"server: accepting connections","addr":{"Name":"/tmp/wandb-994700-996038-2170479603/socket","Net":"unix"}}
+{"time":"2026-03-16T02:11:16.238559438Z","level":"INFO","msg":"server: will exit if parent process dies","ppid":994700}
+{"time":"2026-03-16T02:11:16.294006662Z","level":"INFO","msg":"connection: ManageConnectionData: new connection created","id":"1(@)"}
+{"time":"2026-03-16T02:11:16.304306937Z","level":"INFO","msg":"main: starting server","port-filename":"/tmp/tmp90lebwnd/port-994697.txt","pid":994697,"log-level":0,"disable-analytics":false,"shutdown-on-parent-exit":false,"enable-dcgm-profiling":false}
+{"time":"2026-03-16T02:11:16.305387119Z","level":"INFO","msg":"server: will exit if parent process dies","ppid":994697}
+{"time":"2026-03-16T02:11:16.305355866Z","level":"INFO","msg":"server: accepting connections","addr":{"Name":"/tmp/wandb-994697-996048-4100953783/socket","Net":"unix"}}
+{"time":"2026-03-16T02:11:16.305767476Z","level":"INFO","msg":"handleInformInit: received","streamId":"tdqi5gk1","id":"1(@)"}
+{"time":"2026-03-16T02:11:16.3726427Z","level":"INFO","msg":"connection: ManageConnectionData: new connection created","id":"1(@)"}
+{"time":"2026-03-16T02:11:16.387465487Z","level":"INFO","msg":"handleInformInit: received","streamId":"43u0zpn1","id":"1(@)"}
+{"time":"2026-03-16T02:11:16.425015461Z","level":"INFO","msg":"connection: ManageConnectionData: new connection created","id":"1(@)"}
+{"time":"2026-03-16T02:11:16.440634462Z","level":"INFO","msg":"handleInformInit: received","streamId":"fx4u69r5","id":"1(@)"}
+{"time":"2026-03-16T02:11:16.730290793Z","level":"INFO","msg":"handleInformInit: stream started","streamId":"tdqi5gk1","id":"1(@)"}
+{"time":"2026-03-16T02:11:16.830749874Z","level":"INFO","msg":"handleInformInit: stream started","streamId":"43u0zpn1","id":"1(@)"}
+{"time":"2026-03-16T02:11:16.863175676Z","level":"INFO","msg":"handleInformInit: stream started","streamId":"fx4u69r5","id":"1(@)"}
+{"time":"2026-03-16T02:11:22.303389682Z","level":"INFO","msg":"connection: cancelling request","id":"1(@)","requestId":"vyh9anfqajaf"}
+{"time":"2026-03-16T02:11:22.391759194Z","level":"INFO","msg":"connection: cancelling request","id":"1(@)","requestId":"s1y80lkc0kpi"}
+{"time":"2026-03-16T02:11:22.48532042Z","level":"INFO","msg":"connection: cancelling request","id":"1(@)","requestId":"ovbnzyi31s5c"}

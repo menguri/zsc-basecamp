@@ -1,0 +1,21 @@
+{"time":"2026-03-15T23:20:43.107998035Z","level":"INFO","msg":"main: starting server","port-filename":"/tmp/tmp00w2og2s/port-835026.txt","pid":835026,"log-level":0,"disable-analytics":false,"shutdown-on-parent-exit":false,"enable-dcgm-profiling":false}
+{"time":"2026-03-15T23:20:43.108898928Z","level":"INFO","msg":"server: will exit if parent process dies","ppid":835026}
+{"time":"2026-03-15T23:20:43.108793026Z","level":"INFO","msg":"server: accepting connections","addr":{"Name":"/tmp/wandb-835026-836045-2160703945/socket","Net":"unix"}}
+{"time":"2026-03-15T23:20:43.263184309Z","level":"INFO","msg":"connection: ManageConnectionData: new connection created","id":"1(@)"}
+{"time":"2026-03-15T23:20:43.279225589Z","level":"INFO","msg":"handleInformInit: received","streamId":"j5r65d8u","id":"1(@)"}
+{"time":"2026-03-15T23:20:43.530937132Z","level":"INFO","msg":"main: starting server","port-filename":"/tmp/tmpo_rnbecs/port-835024.txt","pid":835024,"log-level":0,"disable-analytics":false,"shutdown-on-parent-exit":false,"enable-dcgm-profiling":false}
+{"time":"2026-03-15T23:20:43.531671471Z","level":"INFO","msg":"server: will exit if parent process dies","ppid":835024}
+{"time":"2026-03-15T23:20:43.53159643Z","level":"INFO","msg":"server: accepting connections","addr":{"Name":"/tmp/wandb-835024-836163-3843911156/socket","Net":"unix"}}
+{"time":"2026-03-15T23:20:43.692179828Z","level":"INFO","msg":"connection: ManageConnectionData: new connection created","id":"1(@)"}
+{"time":"2026-03-15T23:20:43.706293344Z","level":"INFO","msg":"handleInformInit: received","streamId":"klxdb412","id":"1(@)"}
+{"time":"2026-03-15T23:20:43.713679625Z","level":"INFO","msg":"handleInformInit: stream started","streamId":"j5r65d8u","id":"1(@)"}
+{"time":"2026-03-15T23:20:43.787027761Z","level":"INFO","msg":"main: starting server","port-filename":"/tmp/tmpbxccbhdq/port-835023.txt","pid":835023,"log-level":0,"disable-analytics":false,"shutdown-on-parent-exit":false,"enable-dcgm-profiling":false}
+{"time":"2026-03-15T23:20:43.787954502Z","level":"INFO","msg":"server: will exit if parent process dies","ppid":835023}
+{"time":"2026-03-15T23:20:43.78790118Z","level":"INFO","msg":"server: accepting connections","addr":{"Name":"/tmp/wandb-835023-836264-2454090033/socket","Net":"unix"}}
+{"time":"2026-03-15T23:20:43.941211777Z","level":"INFO","msg":"connection: ManageConnectionData: new connection created","id":"1(@)"}
+{"time":"2026-03-15T23:20:43.954352171Z","level":"INFO","msg":"handleInformInit: received","streamId":"5ch9tob7","id":"1(@)"}
+{"time":"2026-03-15T23:20:44.029519287Z","level":"INFO","msg":"handleInformInit: stream started","streamId":"klxdb412","id":"1(@)"}
+{"time":"2026-03-15T23:20:44.279270622Z","level":"INFO","msg":"handleInformInit: stream started","streamId":"5ch9tob7","id":"1(@)"}
+{"time":"2026-03-15T23:20:49.328533006Z","level":"INFO","msg":"connection: cancelling request","id":"1(@)","requestId":"uyu1lesn5x89"}
+{"time":"2026-03-15T23:20:49.580676026Z","level":"INFO","msg":"connection: cancelling request","id":"1(@)","requestId":"0qsimdkx8qo9"}
+{"time":"2026-03-15T23:20:49.804225452Z","level":"INFO","msg":"connection: cancelling request","id":"1(@)","requestId":"9srjnzrm1db6"}

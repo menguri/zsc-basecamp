@@ -7,8 +7,8 @@ EVAL_CODE_DIR="$EVAL_DIR/eval_code"
 
 EVAL_MODE="${EVAL_MODE:-xp}"
 LAYOUT="${LAYOUT:-cramped_room}"
-ALGO0="${ALGO0:-bc}"
-ALGO1="${ALGO1:-}"
+ALGO0="${ALGO0:-ph2}"
+ALGO1="${ALGO1:-bc}"
 
 MODELS_ROOT="${MODELS_ROOT:-$EVAL_DIR/models/Overcooked}"
 RESULTS_ROOT="${RESULTS_ROOT:-$EVAL_DIR/results}"

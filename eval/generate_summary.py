@@ -12,6 +12,12 @@ def _read_csv_rows(path: Path) -> List[Dict[str, str]]:
         return list(csv.DictReader(f))
 
 
+def _mean_std(values: np.ndarray):
+    if values.size == 0:
+        return "", ""
+    return float(values.mean()), float(values.std())
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Aggregate xp_* csv results")
     parser.add_argument("--results_root", type=Path, required=True)
@@ -34,11 +40,37 @@ def main() -> None:
                 continue
 
             rewards = np.asarray([float(r["reward_mean"]) for r in rows], dtype=np.float32)
+            algo0 = rows[0].get("algo0", "")
+            algo1 = rows[0].get("algo1", "")
+            same_algo = (algo0 != "") and (algo0 == algo1)
+
+            sp_mean, sp_std = "", ""
+            xp_mean, xp_std = "", ""
+            if same_algo:
+                sp_rewards = np.asarray(
+                    [float(r["reward_mean"]) for r in rows if r.get("run0", "") == r.get("run1", "")],
+                    dtype=np.float32,
+                )
+                xp_rewards = np.asarray(
+                    [float(r["reward_mean"]) for r in rows if r.get("run0", "") != r.get("run1", "")],
+                    dtype=np.float32,
+                )
+                sp_mean, sp_std = _mean_std(sp_rewards)
+                xp_mean, xp_std = _mean_std(xp_rewards)
+            else:
+                xp_mean, xp_std = _mean_std(rewards)
+
             rows_out.append(
                 {
                     "layout": layout_dir.name,
                     "xp_folder": combo_dir.name,
+                    "algo0": algo0,
+                    "algo1": algo1,
                     "num_rows": int(len(rows)),
+                    "sp": sp_mean,
+                    "sp_std": sp_std,
+                    "xp": xp_mean,
+                    "xp_std": xp_std,
                     "reward_mean": float(rewards.mean()),
                     "reward_var": float(rewards.var()),
                     "reward_std": float(rewards.std()),
@@ -50,7 +82,13 @@ def main() -> None:
     fieldnames = [
         "xp_folder",
         "layout",
+        "algo0",
+        "algo1",
         "num_rows",
+        "sp",
+        "sp_std",
+        "xp",
+        "xp_std",
         "reward_mean",
         "reward_var",
         "reward_std",

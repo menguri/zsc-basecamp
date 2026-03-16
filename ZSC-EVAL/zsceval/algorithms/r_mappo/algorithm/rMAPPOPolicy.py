@@ -28,7 +28,13 @@ class R_MAPPOPolicy:
         self.data_parallel = getattr(args, "data_parallel", False)
 
         self.actor = R_Actor(args, self.obs_space, self.act_space, self.device)
-        self.critic = R_Critic(args, self.share_obs_space, self.device)
+        # eval_skip_critic is set by the eval pipeline (_patched_policy_config) to avoid
+        # constructing a critic that is never used during evaluation. This prevents CNN
+        # dimension errors when share_obs_space is too small for the default kernel sizes.
+        if not getattr(args, "eval_skip_critic", False):
+            self.critic = R_Critic(args, self.share_obs_space, self.device)
+        else:
+            self.critic = None
 
         self.actor_optimizer = torch.optim.Adam(
             self.actor.parameters(),
@@ -36,11 +42,15 @@ class R_MAPPOPolicy:
             eps=self.opti_eps,
             weight_decay=self.weight_decay,
         )
-        self.critic_optimizer = torch.optim.Adam(
-            self.critic.parameters(),
-            lr=self.critic_lr,
-            eps=self.opti_eps,
-            weight_decay=self.weight_decay,
+        self.critic_optimizer = (
+            torch.optim.Adam(
+                self.critic.parameters(),
+                lr=self.critic_lr,
+                eps=self.opti_eps,
+                weight_decay=self.weight_decay,
+            )
+            if self.critic is not None
+            else None
         )
 
     def to_parallel(self):
@@ -50,8 +60,9 @@ class R_MAPPOPolicy:
             )
             for name, children in self.actor.named_children():
                 setattr(self.actor, name, ExDataParallel(children))
-            for name, children in self.critic.named_children():
-                setattr(self.critic, name, ExDataParallel(children))
+            if self.critic is not None:
+                for name, children in self.critic.named_children():
+                    setattr(self.critic, name, ExDataParallel(children))
 
     def lr_decay(self, episode, episodes):
         update_linear_schedule(self.actor_optimizer, episode, episodes, self.lr)
@@ -155,13 +166,15 @@ class R_MAPPOPolicy:
     def load_checkpoint(self, ckpt_path):
         if "actor" in ckpt_path:
             self.actor.load_state_dict(torch.load(ckpt_path["actor"], map_location=self.device))
-        if "critic" in ckpt_path:
+        if "critic" in ckpt_path and self.critic is not None:
             self.critic.load_state_dict(torch.load(ckpt_path["critic"], map_location=self.device))
 
     def to(self, device):
         self.actor.to(device)
-        self.critic.to(device)
+        if self.critic is not None:
+            self.critic.to(device)
 
     def prep_rollout(self):
         self.actor.eval()
-        self.critic.eval()
+        if self.critic is not None:
+            self.critic.eval()

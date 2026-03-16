@@ -17,3 +17,8 @@ config: {'algorithm_name': 'ph2', 'experiment_name': 'ph2', 'seed': 2, 'cuda': T
 2026-03-14 13:59:09,781 INFO    MainThread:3487444 [wandb_run.py:_redirect():2442] Wrapping output streams.
 2026-03-14 13:59:09,781 INFO    MainThread:3487444 [wandb_run.py:_redirect():2465] Redirects installed.
 2026-03-14 13:59:09,788 INFO    MainThread:3487444 [wandb_init.py:init():1082] run started, returning control to user process
+2026-03-15 01:36:07,742 INFO    MainThread:3487444 [wandb_run.py:_finish():2291] finishing run m-personal-experiment/zsc-basecamp/ggi5tvdr
+2026-03-15 01:36:07,743 INFO    MainThread:3487444 [wandb_run.py:_atexit_cleanup():2490] got exitcode: 0
+2026-03-15 01:36:07,744 INFO    MainThread:3487444 [wandb_run.py:_restore():2472] restore
+2026-03-15 01:36:07,745 INFO    MainThread:3487444 [wandb_run.py:_restore():2478] restore done
+2026-03-15 01:36:09,483 INFO    MainThread:3487444 [wandb_run.py:_footer_sync_info():3868] logging synced files

@@ -28,6 +28,9 @@ class RunModel:
     actor_path: Path
     policy_config_path: Path
     featurize_type: str
+    # ph2 only: full ind actor (with _ph2_proj) and PartnerPredictionNet weights
+    ind_actor_path: Optional[Path] = None
+    pred_path: Optional[Path] = None
 
 
 def _sorted_run_dirs(base_dir: Path) -> List[Path]:
@@ -86,6 +89,22 @@ def _find_latest_actor_pt(run_dir: Path) -> Optional[Path]:
     return max(candidates, key=lambda p: (_priority(p), p.stat().st_mtime, str(p)))
 
 
+def _find_latest_ind_actor_pt(run_dir: Path) -> Optional[Path]:
+    """ph2 only: ind_actor_*.pt with full PH2Actor weights (includes _ph2_proj)."""
+    candidates = [p for p in run_dir.rglob("ind_actor_*.pt") if p.is_file()]
+    if not candidates:
+        return None
+    return max(candidates, key=lambda p: p.stat().st_mtime)
+
+
+def _find_latest_ind_pred_pt(run_dir: Path) -> Optional[Path]:
+    """ph2 only: ind_pred_*.pt with PartnerPredictionNet weights."""
+    candidates = [p for p in run_dir.rglob("ind_pred_*.pt") if p.is_file()]
+    if not candidates:
+        return None
+    return max(candidates, key=lambda p: p.stat().st_mtime)
+
+
 def _algo_to_featurize(algo: str) -> str:
     if algo.lower() == "bc":
         return "bc"
@@ -112,6 +131,7 @@ def collect_runs(models_root: Path, algo: str, layout: str) -> List[RunModel]:
             actor = _find_latest_actor_pt(run_dir)
             if policy_cfg is None or actor is None:
                 continue
+            is_ph2 = algo.lower() == "ph2"
             out.append(
                 RunModel(
                     algo=algo,
@@ -121,6 +141,8 @@ def collect_runs(models_root: Path, algo: str, layout: str) -> List[RunModel]:
                     actor_path=actor,
                     policy_config_path=policy_cfg,
                     featurize_type=_algo_to_featurize(algo),
+                    ind_actor_path=_find_latest_ind_actor_pt(run_dir) if is_ph2 else None,
+                    pred_path=_find_latest_ind_pred_pt(run_dir) if is_ph2 else None,
                 )
             )
         if out:
@@ -146,6 +168,10 @@ def _patched_policy_config(src_policy_config: Path, out_path: Path, algo: str) -
         if hasattr(args_copy, "use_single_network"):
             setattr(args_copy, "use_single_network", False)
 
+    # Eval never uses the critic; skip its construction to avoid CNN dimension
+    # errors when share_obs_space is too small for the default kernel sizes.
+    setattr(args_copy, "eval_skip_critic", True)
+
     with open(out_path, "wb") as f:
         pickle.dump((args_copy, obs_space, share_obs_space, act_space), f)
 
@@ -160,16 +186,24 @@ def _build_population_yaml(
     _patched_policy_config(model0.policy_config_path, cfg0, model0.algo)
     _patched_policy_config(model1.policy_config_path, cfg1, model1.algo)
 
+    def _model_path_entry(model: RunModel) -> dict:
+        entry: dict = {"actor": str(model.actor_path)}
+        if model.ind_actor_path is not None:
+            entry["ind_actor"] = str(model.ind_actor_path)
+        return entry
+
     pop_cfg = {
         "p0": {
             "policy_config_path": str(cfg0),
             "featurize_type": model0.featurize_type,
-            "model_path": {"actor": str(model0.actor_path)},
+            "model_path": _model_path_entry(model0),
+            **({"pred_model_path": str(model0.pred_path)} if model0.pred_path is not None else {}),
         },
         "p1": {
             "policy_config_path": str(cfg1),
             "featurize_type": model1.featurize_type,
-            "model_path": {"actor": str(model1.actor_path)},
+            "model_path": _model_path_entry(model1),
+            **({"pred_model_path": str(model1.pred_path)} if model1.pred_path is not None else {}),
         },
     }
     yml_path = tmp_dir / "population.yml"

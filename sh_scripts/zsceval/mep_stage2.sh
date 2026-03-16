@@ -1,6 +1,6 @@
 #!/bin/bash
 # ZSC-EVAL - MEP Stage 2 (Adaptive Agent)
-# 전제조건: mep_stage1.sh 완료
+# 전제조건: mep_stage1.sh (pop=12) 완료, Stage2 pop=12 구성
 # Usage: bash mep_stage2.sh [layout]
 
 source "$(dirname "$0")/../common_args.sh"
@@ -9,10 +9,8 @@ setup_dirs
 env="Overcooked"
 algo="mep"
 population_size=12
-
-# pop_size=12 기준
 entropy_coefs="0.2 0.05 0.01"
-entropy_coef_horizons="0 2.5e7 5e7"
+base_entropy_coef_horizons="0 2.5e7 5e7"
 reward_shaping_horizon="5e7"
 num_env_steps="5e7"
 pop="mep-S1-s12"
@@ -25,6 +23,15 @@ if [ -n "$1" ]; then run_layouts=("$1"); else run_layouts=("${LAYOUTS[@]}"); fi
 
 for layout in "${run_layouts[@]}"; do
     echo "=== ZSC-EVAL MEP Stage2 | layout=${layout} ==="
+    entropy_coef_horizons="${base_entropy_coef_horizons}"
+    if [[ "${layout}" == "random0" || "${layout}" == "random0_medium" || "${layout}" == "random1" || "${layout}" == "random3" || "${layout}" == "small_corridor" || "${layout}" == "unident_s" ]]; then
+        version="old"
+    else
+        version="new"
+    fi
+    if [[ "${layout}" == "small_corridor" ]]; then
+        entropy_coef_horizons="0 4e7 5e7"
+    fi
     ensure_zsceval_policy_config "${layout}"
     echo "  [prep] gen_S2_yml.py ${layout} mep"
     run_zsceval_prep gen_S2_yml.py "${layout}" mep
@@ -40,7 +47,7 @@ for layout in "${run_layouts[@]}"; do
             --num_mini_batch 1 --episode_length 400 \
             --num_env_steps ${num_env_steps} \
             --reward_shaping_horizon ${reward_shaping_horizon} \
-            --overcooked_version new \
+            --overcooked_version "${version}" \
             --ppo_epoch 15 \
             --entropy_coefs ${entropy_coefs} \
             --entropy_coef_horizons ${entropy_coef_horizons} \
