@@ -2,8 +2,8 @@
 PH2Buffer — extends ZSC-EVAL's SharedReplayBuffer with:
   - train_masks   : which samples the learner should actually update on
   - partner_actions: actual partner action (for E3T CE loss)
-  - obs_history   : partner obs history window (for E3T encoder)
-  - act_history   : partner action history window (for E3T encoder)
+  - obs_history   : ego obs history window (for E3T encoder)
+  - act_history   : ego action history window (for E3T encoder)
 
 The generators also yield these extra fields as trailing elements so
 PH2Trainer can access them without touching the base PPO update path.

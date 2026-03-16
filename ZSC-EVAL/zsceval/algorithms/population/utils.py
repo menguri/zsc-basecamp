@@ -92,12 +92,14 @@ class PH2EvalPolicy(EvalPolicy):
     Differs from EvalPolicy in two ways:
     1. Calls PH2Actor.forward() directly (bypassing PH2Policy.act() which does not
        forward pred_context to the actor) so that pred_context can be injected.
-    2. Maintains partner obs/action history and runs PartnerPredictionNet each step
+    2. Maintains ego's own obs/action history and runs PartnerPredictionNet each step
        to compute pred_context.
 
-    Partner history is updated by the runner via record_partner() before each step.
-    Only PPO image obs (ndim==3, shape H×W×C) are recorded; BC featurized obs are
-    skipped and pred_context falls back to None for that agent.
+    History is stored as fixed-size numpy arrays initialized to zeros — identical to
+    training. pred_context is always computed (never None), matching train behavior
+    where episode-start history is zero-padded.
+
+    Runner calls update_obs_hist() BEFORE step() and update_act_hist() AFTER env.step().
     """
 
     def __init__(self, args, actor, pred_net):
@@ -106,8 +108,10 @@ class PH2EvalPolicy(EvalPolicy):
         self._actor = actor
         self._pred_net = pred_net
         self._history_len = pred_net.history_len
-        self._obs_hist: dict = {}   # (e, partner_a) -> deque[np.ndarray (H,W,C)]
-        self._act_hist: dict = {}   # (e, partner_a) -> deque[int]
+        # (e, a) -> np.ndarray; shape lazily set on first obs
+        self._obs_hist: dict = {}   # (e, a) -> (T, H, W, C)  float32
+        self._act_hist: dict = {}   # (e, a) -> (T,)           int64
+        self._obs_shape = None      # inferred on first obs
 
     # ------------------------------------------------------------------
     def reset(self, num_envs, num_agents):
@@ -115,43 +119,58 @@ class PH2EvalPolicy(EvalPolicy):
         self._obs_hist.clear()
         self._act_hist.clear()
 
-    # ------------------------------------------------------------------
-    def record_partner(self, all_obs, prev_actions, my_agents):
-        """Called by the runner at the start of each env step.
+    def _ensure_hist(self, ea, obs_shape):
+        """Lazily allocate zero-initialised history arrays for agent ea."""
+        if ea not in self._obs_hist:
+            T = self._history_len
+            self._obs_hist[ea] = np.zeros((T, *obs_shape), dtype=np.float32)
+            self._act_hist[ea] = np.zeros((T,),            dtype=np.int64)
 
-        all_obs      : dict (e, a) -> np.ndarray   — obs for every agent
-        prev_actions : dict (e, a) -> int           — actions from previous step
-        my_agents    : set of (e, a) controlled by this policy
+    # ------------------------------------------------------------------
+    def update_obs_hist(self, all_obs, my_agents):
+        """Called by the runner BEFORE policy.step() — roll and append obs_t.
+
+        Matches training: obs_hist includes obs_t when pred_ctx is computed.
         """
-        for ea, obs in all_obs.items():
-            if ea in my_agents:
+        for ea in my_agents:
+            obs = all_obs.get(ea)
+            if obs is None or obs.ndim != 3:
                 continue
-            # Only use PPO image obs (H×W×C, ndim==3). BC featurized obs are 1-D.
-            if obs.ndim != 3:
+            self._ensure_hist(ea, obs.shape)
+            self._obs_hist[ea] = np.roll(self._obs_hist[ea], -1, axis=0)
+            self._obs_hist[ea][-1] = obs.astype(np.float32)
+
+    def update_act_hist(self, act_dict, my_agents):
+        """Called by the runner AFTER env.step() — roll and append act_t.
+
+        Matches training: act_hist excludes act_t when pred_ctx is computed.
+        """
+        for ea in my_agents:
+            if ea not in act_dict:
                 continue
-            if ea not in self._obs_hist:
-                self._obs_hist[ea] = deque(maxlen=self._history_len)
-                self._act_hist[ea] = deque(maxlen=self._history_len)
-            self._obs_hist[ea].append(obs.astype(np.float32))
-            if ea in prev_actions:
-                self._act_hist[ea].append(int(prev_actions[ea]))
+            if ea not in self._act_hist:
+                # allocate without obs_shape (obs_hist may not exist yet)
+                self._act_hist[ea] = np.zeros((self._history_len,), dtype=np.int64)
+            self._act_hist[ea] = np.roll(self._act_hist[ea], -1, axis=0)
+            self._act_hist[ea][-1] = int(act_dict[ea])
 
     # ------------------------------------------------------------------
     def _compute_pred_context(self, agents):
-        """Return (N, action_dim) pred_context or None if history is not yet full."""
+        """Return (N, action_dim) pred_context.
+
+        Always returns a value (zero-padded history for episode start),
+        matching training where obs_hist/act_hist are zero-initialised.
+        Returns None only if obs_hist has not been allocated yet (first step
+        before any update_obs_hist call, which should not happen in practice).
+        """
         contexts = []
-        for (e, a) in agents:
-            partner_a = 1 - a
-            ea_p = (e, partner_a)
-            hist_obs = list(self._obs_hist.get(ea_p, []))
-            hist_act = list(self._act_hist.get(ea_p, []))
-            T = self._history_len
-            if len(hist_obs) < T or len(hist_act) < T:
-                return None  # any agent lacking history → skip for entire batch
-            obs_arr = np.stack(hist_obs[-T:])          # (T, H, W, C)
-            act_arr = np.array(hist_act[-T:], dtype=np.int64)  # (T,)
-            obs_t = torch.from_numpy(obs_arr).unsqueeze(0)     # (1, T, H, W, C)
-            act_t = torch.from_numpy(act_arr).unsqueeze(0)     # (1, T)
+        for ea in agents:
+            if ea not in self._obs_hist:
+                return None  # guard: update_obs_hist not yet called
+            obs_arr = self._obs_hist[ea]                    # (T, H, W, C)
+            act_arr = self._act_hist[ea]                    # (T,)
+            obs_t = torch.from_numpy(obs_arr).unsqueeze(0)  # (1, T, H, W, C)
+            act_t = torch.from_numpy(act_arr).unsqueeze(0)  # (1, T)
             dev = next(self._pred_net.parameters()).device
             with torch.no_grad():
                 ctx = self._pred_net(obs_t.to(dev), act_t.to(dev))  # (1, act_dim)

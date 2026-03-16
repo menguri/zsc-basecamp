@@ -443,12 +443,22 @@ class PH2OvercookedRunner(PH2BaseRunner):
             self.trainer.adapt_entropy_coef(total_num_steps)
             spec_info = self.trainer.train_spec(self.spec_buffer)
             self.spec_buffer.after_update()
+            # spec rollout 끝: env는 auto-reset된 새 상태 → ind 버퍼 obs[0] 동기화
+            self.ind_buffer.obs[0]       = self.spec_buffer.obs[0].copy()
+            self.ind_buffer.share_obs[0] = self.spec_buffer.share_obs[0].copy()
+            if self.ind_buffer.available_actions is not None:
+                self.ind_buffer.available_actions[0] = self.spec_buffer.available_actions[0].copy()
 
             # ---- (B) ind rollout: ind-ind or spec-ind ----
             ind_rollout_info = self._collect_ind_rollout(ind_match_envs, episode)
             self._compute_returns(self.ind_buffer, self.trainer.ind_trainer)
             ind_info = self.trainer.train_ind(self.ind_buffer)
             self.ind_buffer.after_update()
+            # ind rollout 끝: env는 auto-reset된 새 상태 → spec 버퍼 obs[0] 동기화
+            self.spec_buffer.obs[0]       = self.ind_buffer.obs[0].copy()
+            self.spec_buffer.share_obs[0] = self.ind_buffer.share_obs[0].copy()
+            if self.spec_buffer.available_actions is not None:
+                self.spec_buffer.available_actions[0] = self.ind_buffer.available_actions[0].copy()
 
             e_time = time.time()
             logger.trace(f"Episode {episode}: rollout+train {e_time - s_time:.2f}s")
@@ -570,6 +580,14 @@ class PH2OvercookedRunner(PH2BaseRunner):
         distance_count = 0
 
         for step in range(self.episode_length):
+            # Update obs_hist with current obs BEFORE pred_ctx computation
+            # so that pred_ctx sees obs_t (current) but NOT act_t (not taken yet).
+            cur_obs = buf.obs[step]
+            for n in range(N):
+                for m in range(M):
+                    obs_hist[n, m] = np.roll(obs_hist[n, m], -1, axis=0)
+                    obs_hist[n, m, -1] = cur_obs[n, m]
+
             # pred context (spec uses spec_pred if available and not shared)
             pred_ctx  = self._compute_pred_context(obs_hist, act_hist, use_spec_pred=True)
             pred_flat = pred_ctx.reshape(N * M, -1)
@@ -636,21 +654,11 @@ class PH2OvercookedRunner(PH2BaseRunner):
             # train_mask = 1 for all (spec-spec)
             train_mask_np = np.ones((N, M, 1), dtype=np.float32)
 
-            # partner_actions: what the partner (other agent) did
+            # partner_actions: what the partner (other agent) did (CE loss target)
             partner_acts = np.zeros((N, M, 1), dtype=np.int64)
             for n in range(N):
                 partner_acts[n, 0, 0] = int(actions_sampled[n, 1, 0])
                 partner_acts[n, 1, 0] = int(actions_sampled[n, 0, 0])
-
-            # update history using the obs BEFORE the step
-            cur_obs = buf.obs[step]
-            for n in range(N):
-                for m in range(M):
-                    pm = 1 - m
-                    obs_hist[n, m] = np.roll(obs_hist[n, m], -1, axis=0)
-                    obs_hist[n, m, -1] = cur_obs[n, pm]
-                    act_hist[n, m] = np.roll(act_hist[n, m], -1, axis=0)
-                    act_hist[n, m, -1] = int(actions_sampled[n, pm, 0])
 
             if dones_flat.ndim == 1:
                 done_envs = np.where(dones_flat)[0]
@@ -660,13 +668,12 @@ class PH2OvercookedRunner(PH2BaseRunner):
             if self._use_blocked:
                 self._update_blocked_pool_and_sample(cur_obs, done_envs, pred_ctx_cur=pred_ctx)
 
-            for n in done_envs:
-                obs_hist[n] = 0.0
-                act_hist[n] = 0
-
             rnn_s[dones_flat == True] = 0.0
             rnn_c[dones_flat == True] = 0.0
 
+            # Store to buffer: obs_hist includes obs_t, act_hist excludes act_t (consistent with inference)
+            # Note: obs_hist is NOT zeroed here — terminal step should retain valid obs_hist for E3T.
+            # The full reset (obs_hist + act_hist) happens below, after act_hist update.
             buf.insert(
                 share_obs, obs, rnn_s, rnn_c,
                 actions_sampled, log_probs, values, rewards, masks,
@@ -679,6 +686,17 @@ class PH2OvercookedRunner(PH2BaseRunner):
                 partner_pred_context=pred_ctx,
                 blocked_features=blk_feats_nm,
             )
+
+            # Update act_hist with act_t AFTER buffer insert
+            for n in range(N):
+                for m in range(M):
+                    act_hist[n, m] = np.roll(act_hist[n, m], -1, axis=0)
+                    act_hist[n, m, -1] = int(actions_sampled[n, m, 0])
+
+            # Reset histories for done envs (next episode starts fresh)
+            for n in done_envs:
+                obs_hist[n] = 0.0
+                act_hist[n] = 0
 
         reward_denom = float(max(1, reward_count))
         return {
@@ -737,6 +755,14 @@ class PH2OvercookedRunner(PH2BaseRunner):
 
         for step in range(self.episode_length):
             step_ind_match = env_ind_match.copy()
+
+            # Update obs_hist with current obs BEFORE pred_ctx computation
+            cur_obs = buf.obs[step]
+            for n in range(N):
+                for m in range(M):
+                    obs_hist[n, m] = np.roll(obs_hist[n, m], -1, axis=0)
+                    obs_hist[n, m, -1] = cur_obs[n, m]
+
             # pred context (ind uses ind_pred)
             pred_ctx  = self._compute_pred_context(obs_hist, act_hist, use_spec_pred=False)
             pred_flat = pred_ctx.reshape(N * M, -1)
@@ -848,36 +874,17 @@ class PH2OvercookedRunner(PH2BaseRunner):
                 partner_acts[n, 0, 0] = int(actions_combined_sampled[n, 1, 0])
                 partner_acts[n, 1, 0] = int(actions_combined_sampled[n, 0, 0])
 
-            cur_obs = buf.obs[step]
-            for n in range(N):
-                for m in range(M):
-                    pm = 1 - m
-                    obs_hist[n, m] = np.roll(obs_hist[n, m], -1, axis=0)
-                    obs_hist[n, m, -1] = cur_obs[n, pm]
-                    act_hist[n, m] = np.roll(act_hist[n, m], -1, axis=0)
-                    act_hist[n, m, -1] = int(actions_combined_sampled[n, pm, 0])
-
             if dones_flat.ndim == 1:
                 done_envs = np.where(dones_flat)[0]
             else:
                 done_envs = np.where(dones_flat.any(axis=-1))[0]
-
-            for n in done_envs:
-                obs_hist[n] = 0.0
-                act_hist[n] = 0
-                # [2] re-randomise spec_slot and ind_match at episode boundary
-                env_ind_match[n]    = (
-                    np.random.rand() < self.trainer.compute_ind_match_prob(episode_idx)
-                )
-                spec_slot_assign[n] = np.random.randint(0, 2)
-                spec_rnn[n] = 0.0
-                spec_rnn_critic[n] = 0.0
 
             rnn_ind[dones_flat == True] = 0.0
             rnn_c_ind[dones_flat == True] = 0.0
             spec_rnn[dones_flat == True] = 0.0
             spec_rnn_critic[dones_flat == True] = 0.0
 
+            # Store to buffer: obs_hist includes obs_t, act_hist excludes act_t
             buf.insert(
                 share_obs, obs, rnn_ind, rnn_c_ind,
                 actions_combined_sampled, lp_ind, val_ind, rewards, masks,
@@ -890,6 +897,24 @@ class PH2OvercookedRunner(PH2BaseRunner):
                 partner_pred_context=pred_ctx,
                 blocked_features=None,
             )
+
+            # Update act_hist with act_t AFTER buffer insert
+            for n in range(N):
+                for m in range(M):
+                    act_hist[n, m] = np.roll(act_hist[n, m], -1, axis=0)
+                    act_hist[n, m, -1] = int(actions_combined_sampled[n, m, 0])
+
+            # Reset histories for done envs (next episode starts fresh)
+            for n in done_envs:
+                obs_hist[n] = 0.0
+                act_hist[n] = 0
+                # re-randomise spec_slot and ind_match at episode boundary
+                env_ind_match[n]    = (
+                    np.random.rand() < self.trainer.compute_ind_match_prob(episode_idx)
+                )
+                spec_slot_assign[n] = np.random.randint(0, 2)
+                spec_rnn[n] = 0.0
+                spec_rnn_critic[n] = 0.0
 
         phase2_denom = float(max(1, total_reward_count))
         ind_ind_ratio = float(ind_ind_reward_count) / float(max(1, total_reward_count))
@@ -998,12 +1023,24 @@ class PH2OvercookedRunner(PH2BaseRunner):
 
         n_eval = self.n_eval_rollout_threads
         M      = self.num_agents
+        L      = self._history_len
         rnn    = np.zeros((n_eval, M, self.recurrent_N, self.hidden_size), dtype=np.float32)
         rnn_c  = np.zeros_like(rnn)
         masks  = np.ones((n_eval, M, 1), dtype=np.float32)
+        obs_hist = np.zeros((n_eval, M, L, *self._obs_shape), dtype=np.float32)
+        act_hist = np.zeros((n_eval, M, L), dtype=np.int64)
 
         self.trainer.ind_policy.prep_rollout()
         for _ in range(self.episode_length):
+            # update obs_hist BEFORE pred_ctx (matches training order)
+            for n in range(n_eval):
+                for m in range(M):
+                    obs_hist[n, m] = np.roll(obs_hist[n, m], -1, axis=0)
+                    obs_hist[n, m, -1] = eval_obs[n, m]
+
+            pred_ctx  = self._compute_pred_context(obs_hist, act_hist, use_spec_pred=False)
+            pred_flat = pred_ctx.reshape(n_eval * M, -1)
+
             _, actions, _, rnn, rnn_c = self.trainer.ind_policy.get_actions(
                 eval_share_obs.reshape(n_eval * M, *eval_share_obs.shape[2:]),
                 eval_obs.reshape(n_eval * M, *eval_obs.shape[2:]),
@@ -1011,6 +1048,7 @@ class PH2OvercookedRunner(PH2BaseRunner):
                 rnn_c.reshape(n_eval * M, self.recurrent_N, self.hidden_size),
                 masks.reshape(n_eval * M, 1),
                 deterministic=True,
+                pred_context=pred_flat,
             )
             actions = _t2n(actions).reshape(n_eval, M, -1)
             rnn     = _t2n(rnn).reshape(n_eval, M, self.recurrent_N, self.hidden_size)
@@ -1021,6 +1059,12 @@ class PH2OvercookedRunner(PH2BaseRunner):
             if not self.use_centralized_V:
                 eval_share_obs = eval_obs
 
+            # update act_hist AFTER env.step (matches training order)
+            for n in range(n_eval):
+                for m in range(M):
+                    act_hist[n, m] = np.roll(act_hist[n, m], -1, axis=0)
+                    act_hist[n, m, -1] = int(actions[n, m, 0])
+
             dones_flat = np.array(dones)
             masks = np.ones((n_eval, M, 1), dtype=np.float32)
             if dones_flat.ndim == 1:
@@ -1029,10 +1073,15 @@ class PH2OvercookedRunner(PH2BaseRunner):
                         masks[n] = 0.0
                         rnn[n]   = 0.0
                         rnn_c[n] = 0.0
+                        obs_hist[n] = 0.0
+                        act_hist[n] = 0
             else:
                 masks[dones_flat == True] = 0.0
                 rnn[dones_flat == True]   = 0.0
                 rnn_c[dones_flat == True] = 0.0
+                for n in np.where(dones_flat.any(axis=-1))[0]:
+                    obs_hist[n] = 0.0
+                    act_hist[n] = 0
 
             for info in infos:
                 if "episode" in info:

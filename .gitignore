@@ -11,3 +11,9 @@
 *.pickle
 *.json
 *.csv
+
+# TensorBoard logs
+**/events.out.tfevents.*
+
+# 실험 결과 폴더 전체를 제외하고 싶다면
+results/

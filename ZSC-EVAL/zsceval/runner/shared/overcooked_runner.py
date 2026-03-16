@@ -441,28 +441,21 @@ class OvercookedRunner(Runner):
 
         extract_info_keys = []  # ['stuck', 'can_begin_cook']
         infos = None
-        prev_actions = None  # actions taken at the previous step (for partner history)
         for _ in range(self.all_args.episode_length):
             eval_actions = np.full((self.n_eval_rollout_threads, self.num_agents, 1), fill_value=0).tolist()
 
-            # Notify PH2EvalPolicy instances of current partner obs and previous actions
-            # so they can update their PartnerPredictionNet history buffers.
-            all_obs_dict = {
+            # Step 1: update obs_hist with current obs BEFORE policy.step()
+            # (consistent with training: pred_ctx sees obs_t but not act_t)
+            cur_obs_dict = {
                 (e, a): eval_obs[e][a]
                 for e in range(self.n_eval_rollout_threads)
                 for a in range(self.num_agents)
             }
-            prev_act_dict = {}
-            if prev_actions is not None:
-                prev_act_dict = {
-                    (e, a): int(prev_actions[e][a])
-                    for e in range(self.n_eval_rollout_threads)
-                    for a in range(self.num_agents)
-                }
             for _, policy in policy_pool.items():
-                if hasattr(policy, "record_partner"):
-                    policy.record_partner(all_obs_dict, prev_act_dict, set(policy.control_agents))
+                if hasattr(policy, "update_obs_hist"):
+                    policy.update_obs_hist(cur_obs_dict, set(policy.control_agents))
 
+            # Step 2: compute pred_ctx and take actions
             for _, policy in policy_pool.items():
                 if len(policy.control_agents) > 0:
                     policy.prep_rollout()
@@ -482,9 +475,9 @@ class OvercookedRunner(Runner):
                     )
                     for action, (e, a) in zip(actions, agents):
                         eval_actions[e][a] = action
-            # Observe reward and next obs
+
+            # Step 3: env step
             eval_actions = np.array(eval_actions)
-            prev_actions = eval_actions  # keep for partner history next iteration
             (
                 eval_obs,
                 _,
@@ -493,6 +486,16 @@ class OvercookedRunner(Runner):
                 eval_infos,
                 eval_available_actions,
             ) = self.eval_envs.step(eval_actions)
+
+            # Step 4: update act_hist with action_t AFTER env step
+            act_dict = {
+                (e, a): int(eval_actions[e][a])
+                for e in range(self.n_eval_rollout_threads)
+                for a in range(self.num_agents)
+            }
+            for _, policy in policy_pool.items():
+                if hasattr(policy, "update_act_hist"):
+                    policy.update_act_hist(act_dict, set(policy.control_agents))
 
             infos = eval_infos
 

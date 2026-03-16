@@ -5,11 +5,11 @@
 
 # ── 벤치마크 레이아웃 (5종) ─────────────────────────────────────────────────
 LAYOUTS=(
+    counter_circuit_o_1order
+    forced_coordination
+    coordination_ring
     cramped_room
     asymmetric_advantages
-    coordination_ring
-    forced_coordination
-    counter_circuit_o_1order
 )
 
 # ── GPU 설정 ─────────────────────────────────────────────────────────────────
