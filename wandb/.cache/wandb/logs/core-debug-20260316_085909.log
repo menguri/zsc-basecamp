@@ -1,0 +1,7 @@
+{"time":"2026-03-16T08:59:09.220911392Z","level":"INFO","msg":"main: starting server","port-filename":"/tmp/tmpe5jvr8b2/port-1276867.txt","pid":1276867,"log-level":0,"disable-analytics":false,"shutdown-on-parent-exit":false,"enable-dcgm-profiling":false}
+{"time":"2026-03-16T08:59:09.221837037Z","level":"INFO","msg":"server: will exit if parent process dies","ppid":1276867}
+{"time":"2026-03-16T08:59:09.221803362Z","level":"INFO","msg":"server: accepting connections","addr":{"Name":"/tmp/wandb-1276867-1277958-3221920107/socket","Net":"unix"}}
+{"time":"2026-03-16T08:59:09.348858911Z","level":"INFO","msg":"connection: ManageConnectionData: new connection created","id":"1(@)"}
+{"time":"2026-03-16T08:59:09.367081041Z","level":"INFO","msg":"handleInformInit: received","streamId":"tyktln41","id":"1(@)"}
+{"time":"2026-03-16T08:59:09.842408999Z","level":"INFO","msg":"handleInformInit: stream started","streamId":"tyktln41","id":"1(@)"}
+{"time":"2026-03-16T08:59:15.437027512Z","level":"INFO","msg":"connection: cancelling request","id":"1(@)","requestId":"nbt623ty7d1h"}

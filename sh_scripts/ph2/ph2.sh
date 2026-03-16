@@ -125,7 +125,7 @@ run_one_seed() {
     fi
 
     echo "[ph2][start] layout=${layout} seed=${seed} gpu=${gpu}"
-    CUDA_VISIBLE_DEVICES="${gpu}" "${cmd[@]}"
+    CUDA_VISIBLE_DEVICES="${gpu}" PYTHONPATH="${BASECAMP_DIR}:${PYTHONPATH}" "${cmd[@]}"
     local rc=$?
     if [ "${rc}" -ne 0 ]; then
         echo "[ph2][fail] layout=${layout} seed=${seed} gpu=${gpu} rc=${rc}"

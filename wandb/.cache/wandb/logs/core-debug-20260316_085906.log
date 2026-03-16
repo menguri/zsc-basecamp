@@ -1,0 +1,7 @@
+{"time":"2026-03-16T08:59:06.859699508Z","level":"INFO","msg":"main: starting server","port-filename":"/tmp/tmpi2t2550y/port-1276869.txt","pid":1276869,"log-level":0,"disable-analytics":false,"shutdown-on-parent-exit":false,"enable-dcgm-profiling":false}
+{"time":"2026-03-16T08:59:06.860789658Z","level":"INFO","msg":"server: will exit if parent process dies","ppid":1276869}
+{"time":"2026-03-16T08:59:06.860694173Z","level":"INFO","msg":"server: accepting connections","addr":{"Name":"/tmp/wandb-1276869-1277836-3685564948/socket","Net":"unix"}}
+{"time":"2026-03-16T08:59:07.004207913Z","level":"INFO","msg":"connection: ManageConnectionData: new connection created","id":"1(@)"}
+{"time":"2026-03-16T08:59:07.018623389Z","level":"INFO","msg":"handleInformInit: received","streamId":"eciqpd10","id":"1(@)"}
+{"time":"2026-03-16T08:59:07.512003427Z","level":"INFO","msg":"handleInformInit: stream started","streamId":"eciqpd10","id":"1(@)"}
+{"time":"2026-03-16T08:59:13.227822341Z","level":"INFO","msg":"connection: cancelling request","id":"1(@)","requestId":"ewqzjyckbcxp"}

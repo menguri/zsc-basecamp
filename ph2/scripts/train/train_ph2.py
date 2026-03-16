@@ -30,8 +30,10 @@ from loguru import logger
 # ---- make sure ZSC-EVAL and ph2 are on path ----
 _HERE = os.path.dirname(os.path.abspath(__file__))
 _PH2_ROOT = os.path.join(_HERE, "..", "..")
+_REPO_ROOT = os.path.abspath(os.path.join(_PH2_ROOT, ".."))
 _ZSC_ROOT = os.path.join(_PH2_ROOT, "..", "ZSC-EVAL")
-for _p in [_PH2_ROOT, _ZSC_ROOT]:
+# Add repo root so `import ph2` resolves, and ZSC-EVAL for `zsceval`.
+for _p in [_REPO_ROOT, _ZSC_ROOT, _PH2_ROOT]:
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
