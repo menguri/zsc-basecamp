@@ -21,7 +21,7 @@ setup_dirs
 # ── BC 하이퍼파라미터 (환경변수로 override 가능) ────────────────────────────
 BC_NUM_EPOCHS="${BC_NUM_EPOCHS:-400}"
 BC_BATCH_SIZE="${BC_BATCH_SIZE:-128}"
-BC_LR="${BC_LR:-1e-3}"
+BC_LR="${BC_LR:-1e-2}"
 BC_SAVE_INTERVAL="${BC_SAVE_INTERVAL:-100}"
 BC_LOG_INTERVAL="${BC_LOG_INTERVAL:-10}"
 BC_SEED_BEGIN="${BC_SEED_BEGIN:-1}"
@@ -96,13 +96,14 @@ for layout in "${run_layouts[@]}"; do
                     cp "${latest_run}/policy_config.pkl" "${target_dir}/"
                 fi
 
-                # actor.pt 복사 (models/ 서브디렉터리에 저장됨)
+                # actor 복사 (마지막 epoch)
                 if [ -f "${latest_run}/models/actor.pt" ]; then
-                    cp "${latest_run}/models/actor.pt" "${target_dir}/"
+                    cp "${latest_run}/models/actor.pt" "${target_dir}/actor.pt"
+                    echo "  → eval 복사 완료: ${target_dir}"
+                else
+                    echo "  [WARNING] actor.pt를 찾지 못했습니다: ${latest_run}/models/"
                 fi
-
-                echo "  → eval 복사 완료: ${target_dir}"
-                echo "    actor.pt: $(ls -lh ${target_dir}/actor.pt 2>/dev/null | awk '{print $5}' || echo 'not found')"
+                echo "    actor.pt: $(ls -lh "${target_dir}/actor.pt" 2>/dev/null | awk '{print $5}' || echo 'not found')"
             else
                 echo "  [WARNING] run 디렉터리를 찾지 못했습니다: ${run_root}"
             fi

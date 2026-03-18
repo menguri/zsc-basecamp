@@ -25,12 +25,14 @@ class RunModel:
     layout: str
     run_name: str
     run_dir: Path
-    actor_path: Path
+    actor_path: Path          # agent0 (p0 position)
     policy_config_path: Path
     featurize_type: str
     # ph2 only: full ind actor (with _ph2_proj) and PartnerPredictionNet weights
     ind_actor_path: Optional[Path] = None
     pred_path: Optional[Path] = None
+    # e3t only: position-specific actor for p1
+    actor_agent1_path: Optional[Path] = None
 
 
 def _sorted_run_dirs(base_dir: Path) -> List[Path]:
@@ -62,7 +64,7 @@ def _find_policy_config(run_dir: Path) -> Optional[Path]:
     return None
 
 
-def _find_latest_actor_pt(run_dir: Path) -> Optional[Path]:
+def _find_latest_actor_pt(run_dir: Path, algo: str = "") -> Optional[Path]:
     all_pts = [p for p in run_dir.rglob("*.pt") if p.is_file()]
     if not all_pts:
         return None
@@ -78,6 +80,12 @@ def _find_latest_actor_pt(run_dir: Path) -> Optional[Path]:
     if not candidates:
         candidates = all_pts
 
+    # E3T: agent1 is a training-only lagging copy; always use agent0 (ego) for eval.
+    if algo.lower() == "e3t":
+        agent0 = [p for p in candidates if "agent0" in p.name.lower()]
+        if agent0:
+            candidates = agent0
+
     def _priority(p: Path) -> int:
         name = p.name.lower()
         if "actor" in name:
@@ -87,6 +95,14 @@ def _find_latest_actor_pt(run_dir: Path) -> Optional[Path]:
         return 1
 
     return max(candidates, key=lambda p: (_priority(p), p.stat().st_mtime, str(p)))
+
+
+def _find_e3t_agent1_pt(run_dir: Path) -> Optional[Path]:
+    """e3t only: actor_agent1_*.pt for use when this model occupies p1 position."""
+    candidates = [p for p in run_dir.rglob("*.pt") if "agent1" in p.name.lower()]
+    if not candidates:
+        return None
+    return max(candidates, key=lambda p: (p.stat().st_mtime, str(p)))
 
 
 def _find_latest_ind_actor_pt(run_dir: Path) -> Optional[Path]:
@@ -128,10 +144,11 @@ def collect_runs(models_root: Path, algo: str, layout: str) -> List[RunModel]:
         out: List[RunModel] = []
         for run_dir in run_dirs:
             policy_cfg = _find_policy_config(run_dir)
-            actor = _find_latest_actor_pt(run_dir)
+            actor = _find_latest_actor_pt(run_dir, algo=algo)
             if policy_cfg is None or actor is None:
                 continue
             is_ph2 = algo.lower() == "ph2"
+            is_e3t = algo.lower() == "e3t"
             out.append(
                 RunModel(
                     algo=algo,
@@ -143,6 +160,7 @@ def collect_runs(models_root: Path, algo: str, layout: str) -> List[RunModel]:
                     featurize_type=_algo_to_featurize(algo),
                     ind_actor_path=_find_latest_ind_actor_pt(run_dir) if is_ph2 else None,
                     pred_path=_find_latest_ind_pred_pt(run_dir) if is_ph2 else None,
+                    actor_agent1_path=_find_e3t_agent1_pt(run_dir) if is_e3t else None,
                 )
             )
         if out:
@@ -163,10 +181,20 @@ def _patched_policy_config(src_policy_config: Path, out_path: Path, algo: str) -
     args_copy = copy.deepcopy(args)
 
     algo_lc = algo.lower()
-    if algo_lc == "ph2":
+    if algo_lc in ("ph2", "e3t"):
+        # ph2 and e3t store non-standard algorithm_name in policy_config;
+        # remap to rmappo so the standard R_MAPPOPolicy is used for eval.
         setattr(args_copy, "algorithm_name", "rmappo")
         if hasattr(args_copy, "use_single_network"):
             setattr(args_copy, "use_single_network", False)
+    elif algo_lc == "fcp":
+        # fcp stores algorithm_name='adaptive' (population-based training);
+        # the exported actor is a standard MAPPO network, remap for eval.
+        setattr(args_copy, "algorithm_name", "mappo")
+        # fcp was trained with custom CNN params but policy_config stores None;
+        # ZSC-EVAL default is (16,5,1,0) which mismatches the saved weights.
+        if getattr(args_copy, "cnn_layers_params", None) is None:
+            setattr(args_copy, "cnn_layers_params", "32,3,1,1 64,3,1,1 32,3,1,1")
 
     # Eval never uses the critic; skip its construction to avoid CNN dimension
     # errors when share_obs_space is too small for the default kernel sizes.
@@ -186,8 +214,13 @@ def _build_population_yaml(
     _patched_policy_config(model0.policy_config_path, cfg0, model0.algo)
     _patched_policy_config(model1.policy_config_path, cfg1, model1.algo)
 
-    def _model_path_entry(model: RunModel) -> dict:
-        entry: dict = {"actor": str(model.actor_path)}
+    def _model_path_entry(model: RunModel, position: int) -> dict:
+        # e3t uses position-specific actors: agent0 for p0, agent1 for p1.
+        if model.algo.lower() == "e3t" and position == 1 and model.actor_agent1_path is not None:
+            actor = model.actor_agent1_path
+        else:
+            actor = model.actor_path
+        entry: dict = {"actor": str(actor)}
         if model.ind_actor_path is not None:
             entry["ind_actor"] = str(model.ind_actor_path)
         return entry
@@ -196,13 +229,13 @@ def _build_population_yaml(
         "p0": {
             "policy_config_path": str(cfg0),
             "featurize_type": model0.featurize_type,
-            "model_path": _model_path_entry(model0),
+            "model_path": _model_path_entry(model0, position=0),
             **({"pred_model_path": str(model0.pred_path)} if model0.pred_path is not None else {}),
         },
         "p1": {
             "policy_config_path": str(cfg1),
             "featurize_type": model1.featurize_type,
-            "model_path": _model_path_entry(model1),
+            "model_path": _model_path_entry(model1, position=1),
             **({"pred_model_path": str(model1.pred_path)} if model1.pred_path is not None else {}),
         },
     }

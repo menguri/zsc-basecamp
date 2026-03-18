@@ -15,6 +15,8 @@ Architecture (action-prediction mode, matching E3T paper Table 4):
     L2 normalise → (B, action_dim) logits
     Loss: cross-entropy vs. actual partner action
 """
+from __future__ import annotations
+
 import math
 
 import torch

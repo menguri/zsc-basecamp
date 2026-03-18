@@ -54,6 +54,12 @@ def make_trainer_policy_cls(algorithm_name, use_single_network=False):
             "zsceval.algorithms.r_mappo.r_mappo.R_MAPPO",
             "zsceval.algorithms.r_mappo.algorithm.rMAPPOPolicy.R_MAPPOPolicy",
         ),
+        # E3T trains with a non-recurrent MAPPO policy; actor0 checkpoint is
+        # eval-compatible with standard R_MAPPOPolicy.
+        "e3t": (
+            "zsceval.algorithms.r_mappo.r_mappo.R_MAPPO",
+            "zsceval.algorithms.r_mappo.algorithm.rMAPPOPolicy.R_MAPPOPolicy",
+        ),
     }
 
     if algorithm_name not in algorithm_dict:

@@ -241,11 +241,22 @@ class BCTrainer:
 
         self._train_inputs = None
         self._train_targets = None
+        self._val_inputs = None
+        self._val_targets = None
 
-    def load_data(self, inputs: np.ndarray, targets: np.ndarray):
-        self._train_inputs = inputs.copy()
-        self._train_targets = targets.copy()
-        logger.info(f"BC data: train={len(self._train_inputs)} samples (no validation split)")
+    def load_data(self, inputs: np.ndarray, targets: np.ndarray, validation_split: float = 0.1):
+        N = len(inputs)
+        perm = np.random.permutation(N)
+        n_val = int(N * validation_split)
+        val_idx, train_idx = perm[:n_val], perm[n_val:]
+        self._train_inputs  = inputs[train_idx].copy()
+        self._train_targets = targets[train_idx].copy()
+        self._val_inputs    = inputs[val_idx].copy()
+        self._val_targets   = targets[val_idx].copy()
+        logger.info(
+            f"BC data: train={len(self._train_inputs)}, val={len(self._val_inputs)} "
+            f"(validation_split={validation_split})"
+        )
 
     def _rnn_zeros(self, n: int) -> torch.Tensor:
         # R_Actor ignores rnn_states for non-recurrent policy; any shape is fine.
@@ -281,6 +292,26 @@ class BCTrainer:
 
         return {"training_loss": loss_sum / total, "training_accuracy": correct / total}
 
+    @torch.no_grad()
+    def validate(self) -> dict:
+        inputs, targets = self._val_inputs, self._val_targets
+        N = len(inputs)
+        correct, total, loss_sum = 0, 0, 0.0
+
+        self.actor.eval()
+        for i in range(0, N, self.batch_size):
+            obs_t = torch.FloatTensor(inputs[i: i + self.batch_size]).to(self.device)
+            act_t = torch.LongTensor(targets[i: i + self.batch_size]).to(self.device).unsqueeze(-1)
+            masks = torch.ones(len(obs_t), 1, device=self.device)
+            rnn_t = self._rnn_zeros(len(obs_t))
+
+            log_probs, _, _ = self.actor.evaluate_actions(obs_t, rnn_t, act_t, masks)
+            loss_sum += (-log_probs.sum()).item()
+            actions, _, _ = self.actor(obs_t, rnn_t, masks, deterministic=True)
+            correct += (actions.squeeze(-1) == act_t.squeeze(-1)).sum().item()
+            total += len(obs_t)
+
+        return {"validation_loss": loss_sum / total, "validation_accuracy": correct / total}
 
 
 # ---------------------------------------------------------------------------
@@ -479,7 +510,7 @@ def main(args):
         hidden_size=all_args.hidden_size,
         device=device,
     )
-    trainer.load_data(inputs, targets)
+    trainer.load_data(inputs, targets, validation_split=all_args.bc_validation_split)
 
     # --- checkpoint dir ---
     save_dir = run_dir / "models"
@@ -489,10 +520,17 @@ def main(args):
     n_eval_episodes = getattr(all_args, "eval_episodes", 10)
 
     best_sparse_r = -float("inf")
+    best_val_acc  = -float("inf")
     last_eval_info = {}
 
     for epoch in range(1, all_args.bc_num_epochs + 1):
         train_info = trainer.fit_once()
+
+        # --- validation (every epoch, matching GAMMA behavior) ---
+        val_info = trainer.validate()
+        if val_info["validation_accuracy"] > best_val_acc:
+            best_val_acc = val_info["validation_accuracy"]
+            torch.save(actor.state_dict(), save_dir / "actor_best_valid_acc.pt")
 
         # --- reward eval ---
         if eval_interval and (epoch % eval_interval == 0 or epoch == all_args.bc_num_epochs):
@@ -510,19 +548,20 @@ def main(args):
             logger.info(
                 f"Epoch {epoch:4d}/{all_args.bc_num_epochs}  "
                 f"train_loss={train_info['training_loss']:.4f}  "
-                f"train_acc={train_info['training_accuracy']:.3f}"
+                f"train_acc={train_info['training_accuracy']:.3f}  "
+                f"val_acc={val_info['validation_accuracy']:.3f}"
                 + reward_str
             )
             if all_args.use_wandb:
-                wandb.log({**train_info, **last_eval_info, "epoch": epoch})
+                wandb.log({**train_info, **val_info, **last_eval_info, "epoch": epoch})
 
         if epoch % all_args.save_interval == 0:
             torch.save(actor.state_dict(), save_dir / f"actor_epoch{epoch}.pt")
 
-    # Final checkpoint — highest priority for _find_latest_actor_pt (name contains "actor")
+    # Final checkpoint (fallback for eval if best_sparse_r was never updated)
     torch.save(actor.state_dict(), save_dir / "actor.pt")
     logger.info(
-        f"Training done. best_sparse_r={best_sparse_r:.3f}"
+        f"Training done. best_sparse_r={best_sparse_r:.3f}  best_val_acc={best_val_acc:.3f}"
     )
     logger.info(f"Checkpoints: {save_dir}")
 

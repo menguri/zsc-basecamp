@@ -102,7 +102,8 @@ def get_ph2_args(parser: argparse.ArgumentParser) -> argparse.ArgumentParser:
         default=1.0,
         help=(
             "Temperature beta for V_gap softmax sampling of blocked states. "
-            "Higher beta = more focused on states with large V_gap."
+            "Higher beta = more focused on states with small V_gap "
+            "(states the policy has not yet learned to avoid)."
         ),
     )
     parser.add_argument(

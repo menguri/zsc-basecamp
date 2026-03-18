@@ -1,19 +1,40 @@
-# Local virtual environments
+# ── Virtual environments ──────────────────────────────────────────────────────
 .venv-gamma/
 .venv-zsceval/
 .zsc-gamma/
 .zsc-zsceval/
 
-# Model checkpoints / weights
+# ── Model checkpoints / weights ───────────────────────────────────────────────
 *.pt
 *.pth
 *.ckpt
+*.pkl
 *.pickle
+
+# ── Experiment results ────────────────────────────────────────────────────────
+results/
+eval/results*/
+eval/logs/
+eval/models/
+
+# ── Eval output files ─────────────────────────────────────────────────────────
 *.json
 *.csv
+*.gif
 
-# TensorBoard logs
+# ── WandB ─────────────────────────────────────────────────────────────────────
+wandb/
+wandb_info/
+
+# ── Python cache ──────────────────────────────────────────────────────────────
+__pycache__/
+**/__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+
+# ── TensorBoard logs ──────────────────────────────────────────────────────────
 **/events.out.tfevents.*
 
-# 실험 결과 폴더 전체를 제외하고 싶다면
-results/
+# ── Policy pool (large generated files) ──────────────────────────────────────
+policy_pool/

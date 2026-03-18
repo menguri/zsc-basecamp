@@ -83,6 +83,19 @@ def parse_args(args, parser: argparse.ArgumentParser):
     )
 
     parser.add_argument("--use_task_v_out", default=False, action="store_true")
+
+    # ---- StateReconNet co-training (ph2/runner/shared/sp_recon_runner.py) ----
+    parser.add_argument("--use_state_recon", default=False, action="store_true",
+                        help="Co-train StateReconNet alongside SP.")
+    parser.add_argument("--recon_history_len", type=int, default=5)
+    parser.add_argument("--recon_coef",        type=float, default=1.0)
+    parser.add_argument("--pred_coef",         type=float, default=1.0)
+    parser.add_argument("--recon_lr",          type=float, default=1e-3)
+    parser.add_argument("--recon_batch_size",  type=int,   default=512)
+    parser.add_argument("--recon_grad_steps",  type=int,   default=5)
+    parser.add_argument("--recon_log_interval", type=int,  default=25,
+                        help="Episodes between heatmap image logs.")
+
     # all_args = parser.parse_known_args(args)[0]
     all_args = parser.parse_args(args)
     from zsceval.overcooked_config import OLD_LAYOUTS
@@ -198,7 +211,9 @@ def main(args):
     }
 
     # run experiments
-    if all_args.share_policy:
+    if getattr(all_args, "use_state_recon", False):
+        from ph2.runner.shared.sp_recon_runner import SpReconRunner as Runner
+    elif all_args.share_policy:
         from zsceval.runner.shared.overcooked_runner import OvercookedRunner as Runner
     else:
         from zsceval.runner.separated.overcooked_runner import (
