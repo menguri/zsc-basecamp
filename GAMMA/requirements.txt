@@ -60,7 +60,7 @@ pettingzoo==1.24.2
 pexpect==4.9.0
 Pillow==10.1.0
 prompt-toolkit==3.0.41
-protobuf==4.25.1
+protobuf==5.29.6
 psutil==5.9.6
 ptyprocess==0.7.0
 pure-eval==0.2.2
